@@ -57,7 +57,6 @@ jobs:
         uses: actions/setup-java@v2
         with:
           java-version: '11'
-        working-directory: ${{env.base-directory}}
       - name: Publish snapshot package
         run: ./gradlew publish
         env:
