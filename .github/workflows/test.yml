@@ -1,4 +1,4 @@
-name: Interop Gradle Tests
+name: Tests
 on:
   push:
     branches: [ master ]
@@ -20,6 +20,9 @@ jobs:
         run: chmod +x gradlew
 
       - name: Gradlew Test
+        env:
+          PACKAGE_USER: ${{ secrets.PACKAGES_PAT_USER }}
+          PACKAGE_TOKEN: ${{ secrets.PACKAGES_PAT }}
         run: ./gradlew test
 
       - name: Upload Coverage
