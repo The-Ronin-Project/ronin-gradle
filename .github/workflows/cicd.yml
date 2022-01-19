@@ -33,10 +33,8 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
           file: ./codecov/test/jacocoTestReport.xml
-      - name: echo
-        run: echo ${{ github.ref_name }}
       - name: Publish Snapshot
-        if: success() && (github.ref_name == 'master' || github.ref_name == 'ronin-5')
+        if: success()
         run: ./gradlew publish
         env:
           PACKAGE_USER: ${{ secrets.PACKAGES_PAT_USER }}
