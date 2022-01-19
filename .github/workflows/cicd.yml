@@ -26,7 +26,7 @@ jobs:
         uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
+          fail_ci_if_error: true
           file: ./codecov/test/jacocoTestReport.xml
 
   ###############################################
