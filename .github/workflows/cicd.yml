@@ -1,4 +1,4 @@
-name: CI
+name: CICD
 on:
   push:
     branches: [ master ]
@@ -8,7 +8,7 @@ jobs:
   ###############################################
   # Run tests and publish coverage to codecov.io
   ###############################################
-  tests:
+  cicd:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -33,6 +33,8 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
           file: ./codecov/test/jacocoTestReport.xml
+      - name: echo
+        run: echo ${{ github.ref_name }}
       - name: Publish Snapshot
         if: success() && (github.ref_name == 'master' || github.ref_name == 'ronin-5')
         run: ./gradlew publish
