@@ -3,7 +3,6 @@ on:
   push:
     branches: [ master ]
   pull_request:
-
 jobs:
   ###############################################
   # Run tests and publish coverage to codecov.io
@@ -34,7 +33,7 @@ jobs:
           fail_ci_if_error: true
           file: ./codecov/test/jacocoTestReport.xml
       - name: Publish Snapshot
-        if: success()
+        if: success() && github.ref == 'refs/heads/master'
         run: ./gradlew publish
         env:
           PACKAGE_USER: ${{ secrets.PACKAGES_PAT_USER }}
