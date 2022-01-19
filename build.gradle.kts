@@ -1,11 +1,12 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
+    id("com.projectronin.interop.gradle.base") version "1.0.0-SNAPSHOT"
+
     `kotlin-dsl`
     `maven-publish`
-
     jacoco
     id("org.jlleitschuh.gradle.ktlint") version "10.2.0"
-
-    id("com.projectronin.interop.gradle.base") version "1.0.0-SNAPSHOT"
 }
 
 repositories {
@@ -22,6 +23,8 @@ repositories {
 }
 
 dependencies {
+    implementation("com.projectronin.interop.gradle.base:com.projectronin.interop.gradle.base.gradle.plugin:1.0.0-SNAPSHOT")
+
     implementation("io.spring.gradle:dependency-management-plugin:1.0.11.RELEASE")
     implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.31")
     implementation("org.jetbrains.kotlin:kotlin-allopen:1.5.31")
@@ -58,6 +61,16 @@ publishing {
         create<MavenPublication>("library") {
             from(components["java"])
         }
+    }
+}
+
+java.sourceCompatibility = JavaVersion.VERSION_11
+java.targetCompatibility = JavaVersion.VERSION_11
+
+tasks.withType<KotlinCompile> {
+    kotlinOptions {
+        freeCompilerArgs = listOf("-Xjsr305=strict")
+        jvmTarget = "11"
     }
 }
 
