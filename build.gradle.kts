@@ -1,12 +1,10 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
-    id("com.projectronin.interop.gradle.base") version "1.0.0-SNAPSHOT"
-
     `kotlin-dsl`
-    `maven-publish`
-    jacoco
-    id("org.jlleitschuh.gradle.ktlint") version "10.2.0"
+
+    id("com.projectronin.interop.gradle.base") version "1.0.0-SNAPSHOT"
+    id("com.projectronin.interop.gradle.junit") version "1.0.0-SNAPSHOT"
+    id("com.projectronin.interop.gradle.jacoco") version "1.0.0-SNAPSHOT"
+    id("com.projectronin.interop.gradle.publish") version "1.0.0-SNAPSHOT"
 }
 
 repositories {
@@ -24,15 +22,9 @@ repositories {
 
 dependencies {
     implementation("com.projectronin.interop.gradle.base:com.projectronin.interop.gradle.base.gradle.plugin:1.0.0-SNAPSHOT")
-
-    implementation("io.spring.gradle:dependency-management-plugin:1.0.11.RELEASE")
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.31")
-    implementation("org.jetbrains.kotlin:kotlin-allopen:1.5.31")
-    implementation("org.jlleitschuh.gradle:ktlint-gradle:10.2.0")
-
-    testImplementation("org.junit.jupiter:junit-jupiter:5.7.0")
-    // Allows us to change environment variables
-    testImplementation("org.junit-pioneer:junit-pioneer:1.5.0")
+    implementation("com.projectronin.interop.gradle.junit:com.projectronin.interop.gradle.junit.gradle.plugin:1.0.0-SNAPSHOT")
+    implementation("com.projectronin.interop.gradle.jacoco:com.projectronin.interop.gradle.jacoco.gradle.plugin:1.0.0-SNAPSHOT")
+    implementation("com.projectronin.interop.gradle.publish:com.projectronin.interop.gradle.publish.gradle.plugin:1.0.0-SNAPSHOT")
 }
 
 // ktlint includes the generated-sources, which includes the classes created by Gradle for these plugins
@@ -43,37 +35,4 @@ ktlint {
         // This solution comes from https://github.com/JLLeitschuh/ktlint-gradle/issues/222#issuecomment-480758375
         exclude { projectDir.toURI().relativize(it.file.toURI()).path.contains("/generated-sources/") }
     }
-}
-
-// Publishing
-publishing {
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/projectronin/package-repo")
-            credentials {
-                username = System.getenv("PACKAGE_USER")
-                password = System.getenv("PACKAGE_TOKEN")
-            }
-        }
-    }
-    publications {
-        create<MavenPublication>("library") {
-            from(components["java"])
-        }
-    }
-}
-
-java.sourceCompatibility = JavaVersion.VERSION_11
-java.targetCompatibility = JavaVersion.VERSION_11
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs = listOf("-Xjsr305=strict")
-        jvmTarget = "11"
-    }
-}
-
-tasks.register("install") {
-    dependsOn(tasks.publishToMavenLocal)
 }
