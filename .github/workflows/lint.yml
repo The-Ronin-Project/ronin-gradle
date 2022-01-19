@@ -17,3 +17,6 @@ jobs:
         run: chmod +x gradlew
       - name: Gradlew Ktlint
         run: ./gradlew ktlintCheck
+        env:
+          PACKAGE_USER: ${{ secrets.PACKAGES_PAT_USER }}
+          PACKAGE_TOKEN: ${{ secrets.PACKAGES_PAT }}
