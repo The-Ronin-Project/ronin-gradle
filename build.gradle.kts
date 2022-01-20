@@ -27,6 +27,7 @@ dependencies {
     implementation("com.projectronin.interop.gradle.publish:com.projectronin.interop.gradle.publish.gradle.plugin:1.0.0-SNAPSHOT")
 
     implementation("org.springframework.boot:spring-boot-gradle-plugin:2.6.1")
+    implementation("io.spring.gradle:dependency-management-plugin:1.0.11.RELEASE")
 
     implementation("gradle.plugin.com.google.cloud.tools:jib-gradle-plugin:3.1.4")
     implementation("de.undercouch:gradle-download-task:4.1.2")
