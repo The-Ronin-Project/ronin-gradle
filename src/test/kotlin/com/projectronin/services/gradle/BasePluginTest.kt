@@ -16,7 +16,22 @@ class BasePluginTest {
     }
 
     @Test
-    fun `includes interop base`() {
+    fun `includes interop base plugin`() {
         assertNotNull(project.plugins.findPlugin("com.projectronin.interop.gradle.base"))
+    }
+
+    @Test
+    fun `includes interop junit plugin`() {
+        assertNotNull(project.plugins.findPlugin("com.projectronin.interop.gradle.junit"))
+    }
+
+    @Test
+    fun `includes interop jacoco plugin`() {
+        assertNotNull(project.plugins.findPlugin("com.projectronin.interop.gradle.jacoco"))
+    }
+
+    @Test
+    fun `includes interop publish`() {
+        assertNotNull(project.plugins.findPlugin("com.projectronin.interop.gradle.publish"))
     }
 }

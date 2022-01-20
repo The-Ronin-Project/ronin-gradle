@@ -33,7 +33,7 @@ jobs:
           fail_ci_if_error: true
           file: ./codecov/test/jacocoTestReport.xml
       - name: Publish Snapshot
-        if: success() && github.ref == 'refs/heads/master'
+#        if: success() && github.ref == 'refs/heads/master'
         run: ./gradlew publish
         env:
           PACKAGE_USER: ${{ secrets.PACKAGES_PAT_USER }}
