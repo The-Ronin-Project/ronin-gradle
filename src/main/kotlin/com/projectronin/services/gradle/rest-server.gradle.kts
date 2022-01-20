@@ -10,7 +10,11 @@ dependencies {
     // auth stuff as implementation deps once it exists
     // ...
 
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    // TODO: this should probably be our own ronin-security-test wrapper once we have our security stuff
-    testImplementation("org.springframework.security:spring-security-test")
+
+    // implementation("org.springframework.boot:spring-boot-starter-security")
+    // testImplementation("org.springframework.security:spring-security-test")
 }
