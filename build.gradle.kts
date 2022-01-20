@@ -25,6 +25,11 @@ dependencies {
     implementation("com.projectronin.interop.gradle.junit:com.projectronin.interop.gradle.junit.gradle.plugin:1.0.0-SNAPSHOT")
     implementation("com.projectronin.interop.gradle.jacoco:com.projectronin.interop.gradle.jacoco.gradle.plugin:1.0.0-SNAPSHOT")
     implementation("com.projectronin.interop.gradle.publish:com.projectronin.interop.gradle.publish.gradle.plugin:1.0.0-SNAPSHOT")
+
+    implementation("org.springframework.boot:spring-boot-gradle-plugin:2.6.1")
+
+    implementation("gradle.plugin.com.google.cloud.tools:jib-gradle-plugin:3.1.4")
+    implementation("de.undercouch:gradle-download-task:4.1.2")
 }
 
 // ktlint includes the generated-sources, which includes the classes created by Gradle for these plugins
