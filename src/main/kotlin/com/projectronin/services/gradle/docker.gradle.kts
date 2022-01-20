@@ -15,9 +15,8 @@ task<Download>("download-datadog-agent") {
     // jib put it into the container.
     // See https://projectronin.atlassian.net/browse/QUAL-578
     src("https://repo1.maven.org/maven2/com/datadoghq/dd-java-agent/0.90.0/dd-java-agent-0.90.0.jar")
-    dest("${buildDir}/datadog/dd-java-agent.jar")
+    dest("$buildDir/datadog/dd-java-agent.jar")
 }
-
 
 jib {
     to {
@@ -30,7 +29,7 @@ jib {
         paths {
             path {
                 // https://github.com/GoogleContainerTools/jib/issues/2715
-                setFrom("${buildDir}/datadog")
+                setFrom("$buildDir/datadog")
                 into = "/opt/datadog"
             }
         }
