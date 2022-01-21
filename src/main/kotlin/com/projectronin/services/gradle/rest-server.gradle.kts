@@ -1,7 +1,9 @@
 package com.projectronin.services.gradle
 
 plugins {
+    id("com.projectronin.services.gradle.base")
     id("com.projectronin.services.gradle.boot")
+    id("com.projectronin.services.gradle.docker")
 }
 
 dependencies {
