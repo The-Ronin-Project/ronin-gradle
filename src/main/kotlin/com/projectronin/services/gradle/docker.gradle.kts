@@ -18,11 +18,13 @@ task<Download>("download-datadog-agent") {
     dest("$buildDir/datadog/dd-java-agent.jar")
 }
 
+val dockerTag = System.getenv("DOCKER_TAG") ?: "latest"
+
 jib {
     to {
         // TODO: the GHA determines the tag, right?? need to figure out what envvar to use for that instead of hardcoded latest
         // Should probably just have the GHA pass the entire image name in... How to do that?
-        image = "projectronin.azurecr.io/${project.name}:latest"
+        image = "projectronin.azurecr.io/ronin/${project.name}:$dockerTag"
     }
 
     extraDirectories {
@@ -39,13 +41,7 @@ jib {
         jvmFlags = listOf("-javaagent:/opt/datadog/dd-java-agent.jar")
         environment = mapOf(
             "DD_SERVICE" to project.name,
-            // TODO: how to get git commit hash as the version?
-            "DD_VERSION" to "",
-            // TODO: does this totally disable datadog? if not, how to do that?
-            // the goal is to have datadog disabled when running containers locally and then override it in the helm chart
-            // so that it runs in dev/stage/prod
-            "DD_APM_ENABLED" to "false",
-            // automatically include dd.correlation_id and dd.span_id in log MDC
+            "DD_VERSION" to dockerTag,
             "DD_LOGS_INJECTION" to "true"
         )
     }
@@ -56,4 +52,9 @@ listOf("jib", "jibBuildTar", "jibDockerBuild").forEach {
     tasks.named(it) {
         dependsOn("download-datadog-agent")
     }
+}
+
+// tie jib into the publish task so "./gradlew publish" on github includes the docker image
+tasks.named("publish") {
+    dependsOn("jib")
 }
