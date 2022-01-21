@@ -19,5 +19,8 @@ dependencyManagement {
         dependency("org.ktorm:ktorm-support-mysql:3.4.1")
 
         dependency("io.github.microutils:kotlin-logging-jvm:2.0.11")
+
+        // required by our liquibase dockerization since liquibase-cli uses this but liquibase-core doesn't bundle it
+        dependency("info.picocli:picocli:4.6.1")
     }
 }
