@@ -31,8 +31,6 @@ dependencies {
 
     implementation("gradle.plugin.com.google.cloud.tools:jib-gradle-plugin:3.1.4")
     implementation("de.undercouch:gradle-download-task:4.1.2")
-
-    implementation("org.liquibase:liquibase-gradle-plugin:2.1.1")
 }
 
 // ktlint includes the generated-sources, which includes the classes created by Gradle for these plugins

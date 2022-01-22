@@ -3,9 +3,6 @@ package com.projectronin.services.gradle
 plugins {
     id("com.projectronin.services.gradle.base")
     id("com.google.cloud.tools.jib")
-
-    // so you can also run liquibase through gradle and not just docker
-    id("org.liquibase.gradle")
 }
 
 val dockerTag = System.getenv("DOCKER_TAG") ?: "latest"
