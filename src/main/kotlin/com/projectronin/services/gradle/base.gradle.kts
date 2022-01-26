@@ -12,6 +12,7 @@ dependencyManagement {
         mavenBom("org.springframework.boot:spring-boot-dependencies:2.6.1")
         mavenBom("org.testcontainers:testcontainers-bom:1.16.0")
         mavenBom("org.jetbrains.kotlin:kotlin-bom:1.5.31")
+        mavenBom("io.ktor:ktor-bom:1.6.7")
     }
 
     dependencies {
