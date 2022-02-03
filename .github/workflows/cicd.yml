@@ -24,10 +24,8 @@ jobs:
           PACKAGE_TOKEN: ${{ secrets.PACKAGES_PAT }}
       - name: Lint
         run: ./gradlew ktlintCheck
-      - name: Unit Test
-        run: ./gradlew unitTest
-      - name: Integration Test
-        run: ./gradlew integrationTest
+      - name: Test
+        run: ./gradlew test
       - name: Publish Snapshot
         # TODO: once done prototyping, only master should actually push artifacts
         # if: success() && github.ref == 'refs/heads/master'
