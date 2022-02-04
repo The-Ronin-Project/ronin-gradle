@@ -49,6 +49,6 @@ listOf("jib", "jibBuildTar", "jibDockerBuild").forEach {
 }
 
 // tie jib into the publish task so "./gradlew publish" on github includes the docker image
-tasks.named("publish") {
+tasks.getByName("publish") {
     dependsOn("jib")
 }
