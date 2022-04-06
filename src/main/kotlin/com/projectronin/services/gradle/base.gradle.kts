@@ -3,6 +3,8 @@ package com.projectronin.services.gradle
 plugins {
     id("com.projectronin.interop.gradle.base")
     id("com.projectronin.interop.gradle.publish")
+
+    id("io.spring.gradle:dependency-management-plugin")
 }
 
 dependencies {
