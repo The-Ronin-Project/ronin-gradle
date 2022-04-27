@@ -1,13 +1,25 @@
-plugins {
-    `kotlin-dsl`
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-    id("com.projectronin.interop.gradle.base") version "1.0.0-SNAPSHOT"
-    id("com.projectronin.interop.gradle.junit") version "1.0.0-SNAPSHOT"
-    id("com.projectronin.interop.gradle.jacoco") version "1.0.0-SNAPSHOT"
-    id("com.projectronin.interop.gradle.publish") version "1.0.0-SNAPSHOT"
+plugins {
+    kotlin("jvm")
+    `kotlin-dsl`
+    id("org.jlleitschuh.gradle.ktlint")
+    id("io.spring.dependency-management")
+
+    id("com.projectronin.interop.gradle.base")
+    id("com.projectronin.interop.gradle.junit")
+    id("com.projectronin.interop.gradle.jacoco")
+    id("com.projectronin.interop.gradle.publish")
 }
 
 repositories {
+    maven {
+        url = uri("https://repo.devops.projectronin.io/repository/maven-public/")
+        mavenContent {
+            releasesOnly()
+        }
+    }
+
     maven {
         name = "ronin"
         url = uri("https://maven.pkg.github.com/projectronin/package-repo")
@@ -27,6 +39,7 @@ dependencies {
     implementation("com.projectronin.interop.gradle.publish:com.projectronin.interop.gradle.publish.gradle.plugin:1.0.0-SNAPSHOT")
 
     implementation("org.springframework.boot:spring-boot-gradle-plugin:2.6.1")
+    implementation("org.springframework.boot:spring-boot-dependencies:2.6.3")
     implementation("io.spring.gradle:dependency-management-plugin:1.0.11.RELEASE")
 
     implementation("gradle.plugin.com.google.cloud.tools:jib-gradle-plugin:3.1.4")
