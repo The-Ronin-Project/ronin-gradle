@@ -1,4 +1,4 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 
 plugins {
     kotlin("jvm")
@@ -20,23 +20,15 @@ repositories {
         }
     }
 
-    maven {
-        name = "ronin"
-        url = uri("https://maven.pkg.github.com/projectronin/package-repo")
-        credentials {
-            username = System.getenv("PACKAGE_USER")
-            password = System.getenv("PACKAGE_TOKEN")
-        }
-    }
     mavenCentral()
     maven(url = "https://plugins.gradle.org/m2/")
 }
 
 dependencies {
-    implementation("com.projectronin.interop.gradle.base:com.projectronin.interop.gradle.base.gradle.plugin:1.0.0-SNAPSHOT")
-    implementation("com.projectronin.interop.gradle.junit:com.projectronin.interop.gradle.junit.gradle.plugin:1.0.0-SNAPSHOT")
-    implementation("com.projectronin.interop.gradle.jacoco:com.projectronin.interop.gradle.jacoco.gradle.plugin:1.0.0-SNAPSHOT")
-    implementation("com.projectronin.interop.gradle.publish:com.projectronin.interop.gradle.publish.gradle.plugin:1.0.0-SNAPSHOT")
+    implementation("com.projectronin.interop.gradle.base:com.projectronin.interop.gradle.base.gradle.plugin:1.0.0")
+    implementation("com.projectronin.interop.gradle.junit:com.projectronin.interop.gradle.junit.gradle.plugin:1.0.0")
+    implementation("com.projectronin.interop.gradle.jacoco:com.projectronin.interop.gradle.jacoco.gradle.plugin:1.0.0")
+    implementation("com.projectronin.interop.gradle.publish:com.projectronin.interop.gradle.publish.gradle.plugin:1.0.0")
 
     implementation("org.springframework.boot:spring-boot-gradle-plugin:2.6.1")
     implementation("org.springframework.boot:spring-boot-dependencies:2.6.3")

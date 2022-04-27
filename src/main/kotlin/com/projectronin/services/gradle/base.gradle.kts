@@ -1,11 +1,12 @@
 package com.projectronin.services.gradle
 
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 
 plugins {
     kotlin("jvm")
     id("com.projectronin.interop.gradle.base")
     id("com.projectronin.interop.gradle.publish")
+    id("io.spring.dependency-management")
 }
 
 dependencies {
