@@ -1,8 +1,12 @@
 package com.projectronin.services.gradle
 
+
+
 plugins {
+    kotlin("jvm")
     id("com.projectronin.interop.gradle.base")
     id("com.projectronin.interop.gradle.publish")
+    id("io.spring.dependency-management")
 }
 
 dependencies {
