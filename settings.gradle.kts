@@ -1,24 +1,23 @@
 rootProject.name = "ronin-gradle"
 
+include("ronin-contract-json-plugin")
+
 pluginManagement {
-    plugins {
-        kotlin("jvm") version "1.6.10"
-
-        id("org.jlleitschuh.gradle.ktlint") version "10.2.1"
-        id("io.spring.dependency-management") version "1.0.11.RELEASE"
-
-        id("com.projectronin.interop.gradle.base") version "1.0.0"
-        id("com.projectronin.interop.gradle.junit") version "1.0.0"
-        id("com.projectronin.interop.gradle.jacoco") version "1.0.0"
-        id("com.projectronin.interop.gradle.publish") version "1.0.0"
-    }
     repositories {
         maven {
             url = uri("https://repo.devops.projectronin.io/repository/maven-public/")
-            mavenContent {
-                releasesOnly()
-            }
         }
+        mavenLocal()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        maven {
+            url = uri("https://repo.devops.projectronin.io/repository/maven-public/")
+        }
+        mavenLocal()
         gradlePluginPortal()
     }
 }

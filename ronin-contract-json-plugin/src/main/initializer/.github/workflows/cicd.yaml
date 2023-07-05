@@ -1,0 +1,20 @@
+name: Event Contract CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - version/v*
+    tags:
+      - 'v*.*.*'
+  pull_request:
+
+jobs:
+  build_and_test:
+    runs-on: self-hosted
+    steps:
+      - name: test and build
+        uses: projectronin/github/.github/actions/json-contract-cicd-gradle@feature/update-event-workflow-to-gradle
+        with:
+          nexus_user: ${{ secrets.NEXUS_MAVEN_USER }}
+          nexus_token: ${{ secrets.NEXUS_MAVEN_TOKEN }}
