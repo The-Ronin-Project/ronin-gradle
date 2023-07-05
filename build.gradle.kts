@@ -38,13 +38,14 @@ scmVersion {
 
 version = scmVersion.version
 
+val projectVersion: String = scmVersion.version
 val kotlinId: String = libs.plugins.kotlin.jvm.get().pluginId
 val ktlintId: String = libs.plugins.ktlint.get().pluginId
 val koverId: String = libs.plugins.kover.get().pluginId
 
 subprojects {
     group = "com.projectronin.services.gradle"
-    version = version
+    version = projectVersion
 
     apply {
         plugin(kotlinId)
@@ -91,6 +92,7 @@ subprojects {
 
     // detect?
     // sonar?
+    // maven
 }
 
 koverReport {
