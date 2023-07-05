@@ -99,6 +99,8 @@ koverReport {
     defaults {}
 }
 
+// tag version derivation not right
+
 // fun extractPlugins(currentProject: Project): List<Pair<String, String>> {
 //     val basicGradlePluginPattern = "(.*)\\.gradle\\.kts".toRegex()
 //     val pluginIdReplacerPattern = "[^A-Za-z]".toRegex()
