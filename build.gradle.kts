@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.kover)
+    id("org.sonarqube") version "4.0.0.2929"
 }
 
 dependencies {
@@ -90,17 +91,24 @@ subprojects {
         }
     }
 
-    // detect?
-    // sonar?
-    // maven
+    // TODO: detect?
+    // TODO: sonar?
 }
 
 koverReport {
     defaults {}
 }
 
-// tag version derivation not right
+sonar {
+    properties {
+        property("sonar.projectKey", project.name)
+        property("sonar.projectName", project.name)
+        property("sonar.coverage.jacoco.xmlReportPaths", layout.buildDirectory.file("coverage/reports/kover/report.xml").get())
+    }
+}
 
+
+// TODO: Below
 // fun extractPlugins(currentProject: Project): List<Pair<String, String>> {
 //     val basicGradlePluginPattern = "(.*)\\.gradle\\.kts".toRegex()
 //     val pluginIdReplacerPattern = "[^A-Za-z]".toRegex()
