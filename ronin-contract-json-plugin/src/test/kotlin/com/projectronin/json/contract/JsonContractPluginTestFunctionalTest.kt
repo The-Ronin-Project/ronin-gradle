@@ -20,6 +20,7 @@ import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
 import java.io.File
 import java.io.InputStream
+import java.lang.management.ManagementFactory
 import java.net.URL
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -53,8 +54,22 @@ class JsonContractPluginTestFunctionalTest {
         }
     }
 
-    private fun GradleRunner.withJaCoCo(): GradleRunner {
-        tempFolder.resolve("gradle.properties").writeText("\ngroup=com.projectronin.contract.json\n")
+    private fun GradleRunner.withCoverage(): GradleRunner {
+        val propertiesText = StringBuilder()
+
+        propertiesText.append("group=com.projectronin.contract.json\n")
+
+        val runtimeMxBean = ManagementFactory.getRuntimeMXBean()
+        val arguments = runtimeMxBean.inputArguments
+
+        val ideaArguments = arguments.filter { it.matches("""-D.*coverage.*""".toRegex()) }
+        val javaAgentArgument = arguments.firstOrNull { it.matches("""-javaagent.*intellij-coverage-agent.*""".toRegex()) }
+
+        javaAgentArgument?.let { arg ->
+            propertiesText.append("org.gradle.jvmargs=-Xmx512M ${arg}${ideaArguments.joinToString(" ", " ")}")
+        }
+
+        tempFolder.resolve("gradle.properties").writeText(propertiesText.toString())
         return this
     }
 
@@ -116,18 +131,43 @@ class JsonContractPluginTestFunctionalTest {
     }
 
     @Test
+    fun `build with dependency works`() {
+        val m2RepositoryDir = projectDir + ".m2/repository"
+
+        createDependency(
+            "dependency/person/person.schema.json",
+            m2RepositoryDir,
+            "com.projectronin.contract.json",
+            "person-v1",
+            "1.3.7"
+        )
+
+        setupTestProject(
+            listOf("build", "assemble", "--stacktrace", "-Dmaven.repo.local=$m2RepositoryDir"),
+            extraBuildFileText = """
+                dependencies {
+                    schemaDependency("com.projectronin.contract.json:person-v1:1.3.7:schemas@tar.gz")
+                }
+            """.trimIndent(),
+            sourceDirectory = "test/dependencies-pass/v1/person-list-v1.schema.json",
+            printFileTree = true
+        ) {
+            m2RepositoryDir.mkdirs()
+        }
+
+        assertThat(projectDir.resolve("build/generated-sources/js2p/com/projectronin/json/changeprojectnamehere/v1/PersonListV1Schema.java").exists()).isTrue()
+        assertThat(projectDir.resolve("build/generated-sources/js2p/com/projectronin/json/changeprojectnamehere/v1/_dependencies/person_v1/PersonSchema.java").exists()).isTrue()
+        assertThat(projectDir.resolve("build/classes/java/main/com/projectronin/json/changeprojectnamehere/v1/PersonListV1Schema.class").exists()).isTrue()
+        assertThat(projectDir.resolve("build/classes/java/main/com/projectronin/json/changeprojectnamehere/v1/_dependencies/person_v1/PersonSchema.class").exists()).isTrue()
+        assertThat(projectDir.resolve("build/libs/change-project-name-here-1.0.0-SNAPSHOT.jar").exists()).isTrue()
+        assertThat(projectDir.resolve("build/tar/change-project-name-here-schemas.tar.gz").exists()).isTrue()
+    }
+
+    @Test
     fun `local publish succeeds`() {
         val m2RepositoryDir = projectDir + ".m2/repository"
-        val hostRepositoryDir = projectDir + "host-repository"
-        (hostRepositoryDir + "com/projectronin/rest/contract").mkdirs()
-        (hostRepositoryDir + "com/projectronin/rest/contract/foo.txt").writeText("foo")
-        (hostRepositoryDir + "com/projectronin/rest/contract/bar").mkdirs()
-        (hostRepositoryDir + "com/projectronin/rest/contract/bar/bar.txt").writeText("bar")
         setupTestProject(
-            listOf("publishToMavenLocal", "-Phost-repository=$hostRepositoryDir"),
-            prependedBuildFileText = """
-                System.setProperty("maven.repo.local", "$m2RepositoryDir")
-            """.trimIndent()
+            listOf("publishToMavenLocal", "-Dmaven.repo.local=$m2RepositoryDir")
         ) {
             m2RepositoryDir.mkdirs()
         }
@@ -361,7 +401,9 @@ class JsonContractPluginTestFunctionalTest {
         println("=".repeat(80))
 
         // Run the build
-        return runProjectBuild(buildArguments, fail, env).also {
+        return try {
+            runProjectBuild(buildArguments, fail, env)
+        } finally {
             if (printFileTree) {
                 projectDir.walk().forEach { file ->
                     println(file)
@@ -371,7 +413,7 @@ class JsonContractPluginTestFunctionalTest {
     }
 
     private fun runProjectBuild(buildArguments: List<String>, fail: Boolean, env: Map<String, String>): BuildResult {
-        val runner = GradleRunner.create().withJaCoCo()
+        val runner = GradleRunner.create().withCoverage()
         runner.forwardOutput()
         runner.withEnvironment(
             if (env.containsKey("REF_NAME")) {
@@ -383,7 +425,6 @@ class JsonContractPluginTestFunctionalTest {
         runner.withPluginClasspath()
         runner.withArguments(buildArguments)
         runner.withProjectDir(projectDir)
-        runner.withDebug(System.getenv("DEBUG_RUNNER")?.lowercase() == "true")
         return if (fail) {
             runner.buildAndFail()
         } else {
@@ -397,6 +438,40 @@ class JsonContractPluginTestFunctionalTest {
         baseDirectory.resolve("examples").copyRecursively(File(tempFolder, "src/test/resources/examples"))
         baseDirectory.copyRecursively(File(tempFolder, "src/main/resources/schemas"))
         File(tempFolder, "src/main/resources/schemas/examples").deleteRecursively()
+    }
+
+    private fun createDependency(resourceName: String, repoRoot: File, groupId: String, artifactId: String, version: String) {
+        val classLoader = javaClass.classLoader
+
+        val baseDirectory = File(classLoader.getResource(resourceName)!!.file).parentFile
+
+        val newTempDirectory = projectDir.resolve(".tmp/dependency-${UUID.randomUUID()}")
+        newTempDirectory.mkdirs()
+
+        val repoSubDirectory = repoRoot.resolve("${groupId.replace(".", "/")}/$artifactId/$version")
+        repoSubDirectory.mkdirs()
+
+        baseDirectory.copyRecursively(newTempDirectory)
+        listOf(
+            "tar",
+            "czvf",
+            repoSubDirectory.resolve("$artifactId-$version-schemas.tar.gz").absolutePath,
+            "."
+        ).runCommand(newTempDirectory)
+        repoSubDirectory.resolve("$artifactId-$version.pom").writeText(
+            """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+              <modelVersion>4.0.0</modelVersion>
+              <groupId>$groupId</groupId>
+              <artifactId>$artifactId</artifactId>
+              <version>$version</version>
+              <packaging>pom</packaging>
+            </project>
+            """.trimIndent()
+        )
+        newTempDirectory.deleteRecursively()
     }
 
     private operator fun File.plus(other: String): File = this.resolve(other)

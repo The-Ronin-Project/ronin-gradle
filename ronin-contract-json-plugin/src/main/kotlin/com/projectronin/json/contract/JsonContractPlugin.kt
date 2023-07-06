@@ -153,7 +153,7 @@ class JsonContractPlugin : Plugin<Project> {
 
         (project.extensions.findByType(JsonSchemaExtension::class.java) ?: project.extensions.create(Extensions.jsonSchema2Pojo, JsonSchemaExtension::class.java)).apply {
             sourceFiles = listOf(extension.schemaSourceDir.asFile.get())
-            targetPackage = "${extension.packageName.get()}.v${project.version.toString().replace("^([0-9]+)\\..+".toRegex(), "$1")}"
+            targetPackage = Locations.fullPackageName(extension, project)
         }
 
         val testTask = project.tasks.register(ContractTasks.testContracts, TestTask::class.java)

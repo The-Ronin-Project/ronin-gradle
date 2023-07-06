@@ -1,4 +1,4 @@
-package com.projectronin.rest.contract
+package com.projectronin.json.contract
 
 import org.slf4j.LoggerFactory
 import java.io.File
