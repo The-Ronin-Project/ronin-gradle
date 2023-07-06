@@ -149,8 +149,7 @@ class JsonContractPluginTestFunctionalTest {
                     schemaDependency("com.projectronin.contract.json:person-v1:1.3.7:schemas@tar.gz")
                 }
             """.trimIndent(),
-            sourceDirectory = "test/dependencies-pass/v1/person-list-v1.schema.json",
-            printFileTree = true
+            sourceDirectory = "test/dependencies-pass/v1/person-list-v1.schema.json"
         ) {
             m2RepositoryDir.mkdirs()
         }
