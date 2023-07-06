@@ -18,3 +18,7 @@ jobs:
         with:
           nexus_user: ${{ secrets.NEXUS_MAVEN_USER }}
           nexus_token: ${{ secrets.NEXUS_MAVEN_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          sonar_token: ${{ secrets.SONAR_TOKEN }}
+          sonar_host_url: ${{ secrets.SONAR_HOST_URL }}
+          codecov_token: ${{ secrets.CODECOV_TOKEN }}
