@@ -48,6 +48,9 @@ class JsonContractPluginTestFunctionalTest {
     private val settingsFile
         get() = projectDir.resolve("settings.gradle.kts")
 
+    private val thisProjectDirectory: File
+        get() = File(File(javaClass.classLoader.getResource("dependency/person/person.schema.json")!!.file).parentFile.absolutePath.replace("/build.*".toRegex(), ""))
+
     private fun InputStream.toFile(file: File) {
         use { input ->
             file.outputStream().use { input.copyTo(it) }
@@ -65,7 +68,7 @@ class JsonContractPluginTestFunctionalTest {
         val ideaArguments = arguments.filter { it.matches("""-D.*coverage.*""".toRegex()) }
         val javaAgentArgument = arguments
             .firstOrNull { it.matches("""-javaagent.*(intellij-coverage-agent|jacocoagent.jar).*""".toRegex()) }
-            ?.replace("build/jacoco/test.exec", "/Users/rosslodge/code/ronin/ronin-gradle/ronin-contract-json-plugin/build/jacoco/test-${UUID.randomUUID()}.exec")
+            ?.replace("build/jacoco/test.exec", "${thisProjectDirectory.absolutePath}/build/jacoco/test-${UUID.randomUUID()}.exec")
 
         javaAgentArgument?.let { arg ->
             propertiesText.append("org.gradle.jvmargs=-Xmx512M ${arg}${ideaArguments.joinToString(" ", " ")}")
