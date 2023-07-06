@@ -63,11 +63,20 @@ class JsonContractPluginTestFunctionalTest {
         val arguments = runtimeMxBean.inputArguments
 
         val ideaArguments = arguments.filter { it.matches("""-D.*coverage.*""".toRegex()) }
-        val javaAgentArgument = arguments.firstOrNull { it.matches("""-javaagent.*intellij-coverage-agent.*""".toRegex()) }
+        val javaAgentArgument = arguments
+            .firstOrNull { it.matches("""-javaagent.*(intellij-coverage-agent|jacocoagent.jar).*""".toRegex()) }
+            ?.replace("build/jacoco/test.exec", "/Users/rosslodge/code/ronin/ronin-gradle/ronin-contract-json-plugin/build/jacoco/test-${UUID.randomUUID()}.exec")
 
         javaAgentArgument?.let { arg ->
             propertiesText.append("org.gradle.jvmargs=-Xmx512M ${arg}${ideaArguments.joinToString(" ", " ")}")
         }
+
+        File("/Users/rosslodge/temp/args.txt").writeText(
+            """
+            ${arguments.joinToString(" ")}
+            $propertiesText
+            """.trimIndent()
+        )
 
         tempFolder.resolve("gradle.properties").writeText(propertiesText.toString())
         return this

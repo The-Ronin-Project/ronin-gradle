@@ -2,16 +2,17 @@
 plugins {
     `version-catalog`
     `maven-publish`
+    base
+    id("jacoco-report-aggregation")
     alias(libs.plugins.axion.release)
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.ktlint) apply false
-    alias(libs.plugins.kover)
     id("org.sonarqube") version "4.0.0.2929"
 }
 
 dependencies {
     subprojects.forEach { project ->
-        kover(project(":${project.name}"))
+        jacocoAggregation(project(":${project.name}"))
     }
 }
 
@@ -51,7 +52,7 @@ subprojects {
     apply {
         plugin(kotlinId)
         plugin(ktlintId)
-        plugin(koverId)
+        plugin("jacoco")
         plugin("java")
         plugin("maven-publish")
         plugin("java-gradle-plugin")
@@ -90,22 +91,33 @@ subprojects {
             exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
         }
     }
-}
 
-koverReport {
-    defaults {}
+    tasks.withType<JacocoReport> {
+        executionData = files("build/jacoco")
+    }
 }
 
 sonar {
     properties {
         property("sonar.projectKey", project.name)
         property("sonar.projectName", project.name)
-        property("sonar.coverage.jacoco.xmlReportPaths", layout.buildDirectory.file("reports/kover/report.xml").get())
+        property("sonar.coverage.jacoco.xmlReportPaths", layout.buildDirectory.file("reports/jacoco/testCodeCoverageReport").get())
     }
 }
 
-tasks.getByName("sonar").dependsOn("koverXmlReport")
+reporting {
+    reports {
+        val testCodeCoverageReport by creating(JacocoCoverageReport::class) {
+            testType.set(TestSuiteType.UNIT_TEST)
+        }
+    }
+}
 
+tasks.check {
+    dependsOn(tasks.named<JacocoReport>("testCodeCoverageReport"))
+}
+
+tasks.getByName("sonar").dependsOn("testCodeCoverageReport")
 
 // TODO: Below
 // fun extractPlugins(currentProject: Project): List<Pair<String, String>> {
