@@ -1,3 +1,3 @@
 plugins {
-    id("com.projectronin.event.contract")
+    id("com.projectronin.json.contract")
 }

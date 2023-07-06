@@ -8,8 +8,8 @@ import com.networknt.schema.NonValidationKeyword
 import com.networknt.schema.SpecVersion
 import com.networknt.schema.ValidationMessage
 import com.networknt.schema.uri.URIFactory
-import com.projectronin.json.contract.EventContractExtension
-import com.projectronin.json.contract.eventContractExtension
+import com.projectronin.json.contract.JsonContractExtension
+import com.projectronin.json.contract.jsonContractExtension
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.TaskAction
 import java.io.File
@@ -30,7 +30,7 @@ open class TestTask : BaseJsonContractTask() {
      */
     @TaskAction
     fun testSchema(): List<String> {
-        val config = project.eventContractExtension()
+        val config = project.jsonContractExtension()
 
         val allSchemaFiles = mutableListOf<File>()
         val directory = config.schemaSourceDir.get().asFile
@@ -74,7 +74,7 @@ open class TestTask : BaseJsonContractTask() {
     private fun testSingleSchema(file: File): Map<String, Set<ValidationMessage>> {
         val schema = getSchema(file)
 
-        val examples = getExamples(project.eventContractExtension().exampleSourceDir.get().asFile)
+        val examples = getExamples(project.jsonContractExtension().exampleSourceDir.get().asFile)
         if (examples.isEmpty()) {
             logger.lifecycle("${file.name} NO TESTS")
             return emptyMap()
@@ -94,7 +94,7 @@ open class TestTask : BaseJsonContractTask() {
             val schema = getSchema(file)
             val primarySchemaName = Regex("(.+).schema.json").matchEntire(file.name)!!.destructured.component1().replace("-v\\d+".toRegex(), "")
 
-            val examples = getExamples(project.eventContractExtension().exampleSourceDir.get().asFile) { it.name.startsWith(primarySchemaName) }
+            val examples = getExamples(project.jsonContractExtension().exampleSourceDir.get().asFile) { it.name.startsWith(primarySchemaName) }
             val results = testExamples(schema, examples)
             if (results.isEmpty()) {
                 logger.lifecycle("${file.name} ${if (examples.isEmpty()) "NO TESTS" else "PASSED"}")
@@ -159,7 +159,7 @@ open class TestTask : BaseJsonContractTask() {
             }
         }
 
-        val config = project.eventContractExtension()
+        val config = project.jsonContractExtension()
         val baseFactory = getBaseJsonSchemaFactory(config)
         val factory = JsonSchemaFactory.builder(baseFactory)
             .uriFactory(uriFactory, "http", "https")
@@ -170,7 +170,7 @@ open class TestTask : BaseJsonContractTask() {
     /**
      * Creates the base [JsonSchemaFactory] based off the supplied [config].
      */
-    private fun getBaseJsonSchemaFactory(config: EventContractExtension): JsonSchemaFactory {
+    private fun getBaseJsonSchemaFactory(config: JsonContractExtension): JsonSchemaFactory {
         return if (config.ignoredValidationKeywords.get().isEmpty()) {
             JsonSchemaFactory.getInstance(config.specVersion.get())
         } else {

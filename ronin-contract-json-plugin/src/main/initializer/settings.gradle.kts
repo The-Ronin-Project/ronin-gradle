@@ -2,7 +2,7 @@ rootProject.name = "change-project-name-here"
 
 pluginManagement {
     plugins {
-        id("com.projectronin.event.contract") version "@projectVersion@"
+        id("com.projectronin.json.contract") version "@projectVersion@"
     }
 
     repositories {

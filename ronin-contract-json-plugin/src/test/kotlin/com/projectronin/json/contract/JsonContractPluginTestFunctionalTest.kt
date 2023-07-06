@@ -54,7 +54,7 @@ class JsonContractPluginTestFunctionalTest {
     }
 
     private fun GradleRunner.withJaCoCo(): GradleRunner {
-        tempFolder.resolve("gradle.properties").writeText("\ngroup=com.projectronin.contract.event\n")
+        tempFolder.resolve("gradle.properties").writeText("\ngroup=com.projectronin.contract.json\n")
         return this
     }
 
@@ -62,8 +62,8 @@ class JsonContractPluginTestFunctionalTest {
     fun `lists all the correct tasks`() {
         val result = setupTestProject(listOf("tasks", "--stacktrace"))
         listOf(
-            "testEvents",
-            "generateEventDocs",
+            "testContracts",
+            "generateContractDocs",
             "createSchemaTar",
             "downloadSchemaDependencies",
             "generateJsonSchema2Pojo",
@@ -107,10 +107,10 @@ class JsonContractPluginTestFunctionalTest {
     @Test
     fun `build works`() {
         setupTestProject(listOf("build", "assemble", "--stacktrace"))
-        assertThat(projectDir.resolve("build/generated-sources/js2p/com/projectronin/event/changeprojectnamehere/v1/MedicationV1Schema.java").exists()).isTrue()
-        assertThat(projectDir.resolve("build/generated-sources/js2p/com/projectronin/event/changeprojectnamehere/v1/PersonV1Schema.java").exists()).isTrue()
-        assertThat(projectDir.resolve("build/classes/java/main/com/projectronin/event/changeprojectnamehere/v1/PersonV1Schema.class").exists()).isTrue()
-        assertThat(projectDir.resolve("build/classes/java/main/com/projectronin/event/changeprojectnamehere/v1/MedicationV1Schema.class").exists()).isTrue()
+        assertThat(projectDir.resolve("build/generated-sources/js2p/com/projectronin/json/changeprojectnamehere/v1/MedicationV1Schema.java").exists()).isTrue()
+        assertThat(projectDir.resolve("build/generated-sources/js2p/com/projectronin/json/changeprojectnamehere/v1/PersonV1Schema.java").exists()).isTrue()
+        assertThat(projectDir.resolve("build/classes/java/main/com/projectronin/json/changeprojectnamehere/v1/PersonV1Schema.class").exists()).isTrue()
+        assertThat(projectDir.resolve("build/classes/java/main/com/projectronin/json/changeprojectnamehere/v1/MedicationV1Schema.class").exists()).isTrue()
         assertThat(projectDir.resolve("build/libs/change-project-name-here-1.0.0-SNAPSHOT.jar").exists()).isTrue()
         assertThat(projectDir.resolve("build/tar/change-project-name-here-schemas.tar.gz").exists()).isTrue()
     }
@@ -134,8 +134,8 @@ class JsonContractPluginTestFunctionalTest {
 
         assertThat(m2RepositoryDir).exists()
 
-        assertThat(m2RepositoryDir.resolve("com/projectronin/contract/event/change-project-name-here-v1/1.0.0-SNAPSHOT/change-project-name-here-v1-1.0.0-SNAPSHOT.jar").exists()).isTrue()
-        assertThat(m2RepositoryDir.resolve("com/projectronin/contract/event/change-project-name-here-v1/1.0.0-SNAPSHOT/change-project-name-here-v1-1.0.0-SNAPSHOT-schemas.tar.gz").exists()).isTrue()
+        assertThat(m2RepositoryDir.resolve("com/projectronin/contract/json/change-project-name-here-v1/1.0.0-SNAPSHOT/change-project-name-here-v1-1.0.0-SNAPSHOT.jar").exists()).isTrue()
+        assertThat(m2RepositoryDir.resolve("com/projectronin/contract/json/change-project-name-here-v1/1.0.0-SNAPSHOT/change-project-name-here-v1-1.0.0-SNAPSHOT-schemas.tar.gz").exists()).isTrue()
     }
 
     @Nested
@@ -242,7 +242,7 @@ class JsonContractPluginTestFunctionalTest {
                 extension: String,
                 artifact: String = "change-project-name-here-v1",
                 classifier: String? = null,
-                packageDir: String = "com/projectronin/contract/event",
+                packageDir: String = "com/projectronin/contract/json",
                 expectedCode: Int = 200,
                 realVersion: String = version
             ) {
@@ -257,7 +257,7 @@ class JsonContractPluginTestFunctionalTest {
                     }
             }
 
-            val tree = jsonMapper.readTree(URL("http://localhost:$containerPort/api/maven/details/snapshots/com/projectronin/contract/event/change-project-name-here-v1/1.0.0-SNAPSHOT"))
+            val tree = jsonMapper.readTree(URL("http://localhost:$containerPort/api/maven/details/snapshots/com/projectronin/contract/json/change-project-name-here-v1/1.0.0-SNAPSHOT"))
             val actualSnapshotVersion = tree["files"].find { jn -> jn["name"].textValue().endsWith(".pom") }!!["name"].textValue().replace("""change-project-name-here-v1-(.+)\.pom""".toRegex(), "$1")
 
             verifyFile(true, "1.0.0-SNAPSHOT", "jar", realVersion = actualSnapshotVersion)

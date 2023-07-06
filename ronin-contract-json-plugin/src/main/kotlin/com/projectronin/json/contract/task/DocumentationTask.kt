@@ -14,7 +14,7 @@ import javax.inject.Inject
 import kotlin.io.path.setPosixFilePermissions
 
 /**
- * Task responsible for generating documentation for Event contracts.
+ * Task responsible for generating documentation for Json contracts.
  */
 open class DocumentationTask @Inject constructor(private val execOperations: ExecOperations) : BaseJsonContractTask() {
     @TaskAction
@@ -33,7 +33,7 @@ class DocumentationGenerator(private val execOperations: ExecOperations, private
     }
 
     fun generate() {
-        val tempFile = File.createTempFile("event-", ".sh")
+        val tempFile = File.createTempFile("json-", ".sh")
         tempFile.deleteOnExit()
         tempFile.toPath().setPosixFilePermissions(
             setOf(

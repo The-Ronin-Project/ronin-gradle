@@ -1,7 +1,7 @@
 package com.projectronin.json.contract.task
 
 import com.networknt.schema.SpecVersion
-import com.projectronin.json.contract.EventContractExtension
+import com.projectronin.json.contract.JsonContractExtension
 import org.apache.commons.io.FileUtils
 import org.gradle.api.GradleException
 import org.gradle.testfixtures.ProjectBuilder
@@ -11,7 +11,7 @@ import org.junit.jupiter.api.assertThrows
 import java.io.File
 
 class TestTaskTest {
-    private lateinit var extension: EventContractExtension
+    private lateinit var extension: JsonContractExtension
 
     private fun getTask(testDirectory: String): TestTask {
         val defaultProject = ProjectBuilder.builder().build()
@@ -28,11 +28,11 @@ class TestTaskTest {
                 .withProjectDir(projectDir)
                 .build()
         project.plugins.apply("com.projectronin.json.contract")
-        extension = project.extensions.getByType(EventContractExtension::class.java).apply {
+        extension = project.extensions.getByType(JsonContractExtension::class.java).apply {
             exampleSourceDir.set(projectDir.resolve("v1/examples"))
             schemaSourceDir.set(projectDir.resolve("v1"))
         }
-        return project.tasks.getByName("testEvents") as TestTask
+        return project.tasks.getByName("testContracts") as TestTask
     }
 
     @Test

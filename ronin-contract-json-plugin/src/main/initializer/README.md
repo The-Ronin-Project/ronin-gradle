@@ -1,6 +1,6 @@
 # contract project name here
 
-This project holds an event / messaging contract.  See the `ronin-contract-json-tooling` repository for more information.
+This project holds json contract (e.g. events, messaging, json storage, redis cache, etc.).  See the `ronin-contract-json-tooling` repository for more information.
 
 To use this plugin, include the following in your plugins section of the Gradle build file:
 
@@ -21,9 +21,9 @@ more than one version of the dependency in a project).
 
 ## Tasks
 
-### testEvents
+### testContracts
 
-The `testEvents` (or just `check`) task will validate the project's schemas and test them against any provided example files.  Examples must be located in `src/test/resources/examples`.  If there
+The `testContracts` (or just `check`) task will validate the project's schemas and test them against any provided example files.  Examples must be located in `src/test/resources/examples`.  If there
 is only a single primary schema file, then all examples will be tested against it.  If there are multiple primary schema files, the main name of that schema file is assumed to prefix
 applicable examples.
 
@@ -48,9 +48,9 @@ against `my-other-schema-v2.schema.json`.
     │   ├── my-other-schema-example2.json
     │   └── my-schema-example.json
 
-### generateEventDocs
+### generateContractDocs
 
-The `generateEventDocs` task uses the Docker image built by the parent project to generate documentation for all schemas
+The `generateContractDocs` task uses the Docker image built by the parent project to generate documentation for all schemas
 in a `docs` folder within each version folder.
 
 ### clean
@@ -71,7 +71,7 @@ You may use other schema files as dependencies of this one.  In your `build.grad
 
 ```kotlin
 dependencies {
-    schemaDependency("com.projectronin.contract.event:<some artifact id>-v<some major version>:<some version>:schemas@tar.gz")
+    schemaDependency("com.projectronin.contract.json:<some artifact id>-v<some major version>:<some version>:schemas@tar.gz")
 }
 ```
 

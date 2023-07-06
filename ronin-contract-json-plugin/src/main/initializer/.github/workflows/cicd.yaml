@@ -1,4 +1,4 @@
-name: Event Contract CI/CD
+name: Contract CI/CD
 
 on:
   push:

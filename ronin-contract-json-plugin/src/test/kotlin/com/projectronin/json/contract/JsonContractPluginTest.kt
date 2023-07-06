@@ -18,38 +18,38 @@ class JsonContractPluginTest {
     fun `registers extension`() {
         val project = getProject()
 
-        val extension = project.extensions.findByName(EventContractExtension.NAME) as EventContractExtension
+        val extension = project.extensions.findByName(JsonContractExtension.NAME) as JsonContractExtension
         assertThat(extension).isNotNull
         assertThat(extension.schemaSourceDir.get().asFile.absolutePath).isEqualTo("${project.rootDir.absolutePath}/src/main/resources/schemas")
         assertThat(extension.exampleSourceDir.get().asFile.absolutePath).isEqualTo("${project.rootDir.absolutePath}/src/test/resources/examples")
         assertThat(extension.specVersion.get()).isEqualTo(SpecVersion.VersionFlag.V201909)
         assertThat(extension.ignoredValidationKeywords.get()).isEmpty()
-        assertThat(extension.packageName.get()).isEqualTo("com.projectronin.event.simpletestproject")
+        assertThat(extension.packageName.get()).isEqualTo("com.projectronin.json.simpletestproject")
     }
 
     @Test
-    fun `registers testEvents task`() {
+    fun `registers testContracts task`() {
         val project = getProject()
 
-        val testTask = project.tasks.findByName("testEvents")
+        val testTask = project.tasks.findByName("testContracts")
         assertThat(testTask).isNotNull
     }
 
     @Test
-    fun `associates testEvents task with check`() {
+    fun `associates testContracts task with check`() {
         val project = getProject()
 
         val checkTask = project.tasks.findByName("check")
-        val testTask = project.tasks.findByName("testEvents")
+        val testTask = project.tasks.findByName("testContracts")
         assertThat(checkTask).isNotNull()
         assertThat(checkTask?.dependsOn?.find { it is TaskProvider<*> && it.get() == testTask }).isNotNull
     }
 
     @Test
-    fun `registers generateEventDocs task`() {
+    fun `registers generateContractDocs task`() {
         val project = getProject()
 
-        val docsTask = project.tasks.findByName("generateEventDocs")
+        val docsTask = project.tasks.findByName("generateContractDocs")
         assertThat(docsTask).isNotNull()
     }
 }

@@ -22,7 +22,7 @@ import java.io.File
 import java.net.URI
 
 /**
- * The EventContractPlugin provides access to a set of tasks capable of validating and generating documentation for schemas.
+ * The JsonContractPlugin provides access to a set of tasks capable of validating and generating documentation for schemas.
  */
 class JsonContractPlugin : Plugin<Project> {
 
@@ -34,9 +34,9 @@ class JsonContractPlugin : Plugin<Project> {
             fun schemaSourceDir(project: Project): Directory = project.layout.projectDirectory.dir(defaultSourceDir)
             private const val defaultExamplesDir = "src/test/resources/examples"
             fun exampleSourceDir(project: Project): Directory = project.layout.projectDirectory.dir(defaultExamplesDir)
-            fun defaultPackageName(project: Project): String = "com.projectronin.event.${project.name.lowercase().replace("[^a-z]|contract|messaging".toRegex(), "")}"
+            fun defaultPackageName(project: Project): String = "com.projectronin.json.${project.name.lowercase().replace("[^a-z]|contract|messaging".toRegex(), "")}"
             fun versionInfix(project: Project): String = "v${project.version.toString().replace("^([0-9]+)\\..+".toRegex(), "$1")}"
-            fun fullPackageName(settings: EventContractExtension, project: Project): String = "${settings.packageName.get()}.${versionInfix(project)}"
+            fun fullPackageName(settings: JsonContractExtension, project: Project): String = "${settings.packageName.get()}.${versionInfix(project)}"
             fun artifactId(project: Project): String = "${project.name}-${versionInfix(project)}"
 
             fun tarDir(project: Project): File = File("${project.buildDir}/tar")
@@ -44,12 +44,12 @@ class JsonContractPlugin : Plugin<Project> {
             val archiveExtension = "tar.gz"
             val archiveClassifier = "schemas"
             fun archiveFileName(project: Project): String = "${project.name}-$archiveClassifier.$archiveExtension"
-            fun dependencyDir(settings: EventContractExtension): File = settings.schemaSourceDir.get().asFile.resolve(".dependencies")
+            fun dependencyDir(settings: JsonContractExtension): File = settings.schemaSourceDir.get().asFile.resolve(".dependencies")
         }
 
-        object EventTasks {
-            val testEvents = "testEvents"
-            val generateEventDocs = "generateEventDocs"
+        object ContractTasks {
+            val testContracts = "testContracts"
+            val generateContractDocs = "generateContractDocs"
             val createSchemaTar = "createSchemaTar"
             val downloadSchemaDependencies = "downloadSchemaDependencies"
         }
@@ -141,7 +141,7 @@ class JsonContractPlugin : Plugin<Project> {
 
         project.configurations.create(DependencyScopes.schemaDependency)
 
-        val extension = project.extensions.create(EventContractExtension.NAME, EventContractExtension::class.java).apply {
+        val extension = project.extensions.create(JsonContractExtension.NAME, JsonContractExtension::class.java).apply {
             specVersion.convention(SpecVersion.VersionFlag.V201909)
             ignoredValidationKeywords.convention(emptyList())
             schemaSourceDir.convention(Locations.schemaSourceDir(project))
@@ -154,16 +154,16 @@ class JsonContractPlugin : Plugin<Project> {
             targetPackage = "${extension.packageName.get()}.v${project.version.toString().replace("^([0-9]+)\\..+".toRegex(), "$1")}"
         }
 
-        val testTask = project.tasks.register(EventTasks.testEvents, TestTask::class.java)
+        val testTask = project.tasks.register(ContractTasks.testContracts, TestTask::class.java)
         project.tasks.getByName(ExternalTasks.check) {
             it.dependsOn(testTask)
         }
 
-        project.tasks.register(EventTasks.generateEventDocs, DocumentationTask::class.java)
+        project.tasks.register(ContractTasks.generateContractDocs, DocumentationTask::class.java)
 
         val tarDir = Locations.tarDir(project)
 
-        project.tasks.register(EventTasks.createSchemaTar, Tar::class.java) { task ->
+        project.tasks.register(ContractTasks.createSchemaTar, Tar::class.java) { task ->
             task.group = BasePlugin.BUILD_GROUP
             task.dependsOn(ExternalTasks.jar)
             task.compression = Compression.GZIP
@@ -173,7 +173,7 @@ class JsonContractPlugin : Plugin<Project> {
             task.from(project.fileTree(extension.schemaSourceDir))
         }
 
-        project.tasks.findByName(ExternalTasks.assemble)?.dependsOn(EventTasks.createSchemaTar)
+        project.tasks.findByName(ExternalTasks.assemble)?.dependsOn(ContractTasks.createSchemaTar)
 
         registerPublications(
             project,
@@ -183,11 +183,11 @@ class JsonContractPlugin : Plugin<Project> {
     }
 
     private fun registerDownloadTask(
-        settings: EventContractExtension,
+        settings: JsonContractExtension,
         project: Project
     ) {
         val outputDir = Locations.dependencyDir(settings)
-        project.tasks.register(EventTasks.downloadSchemaDependencies) { task ->
+        project.tasks.register(ContractTasks.downloadSchemaDependencies) { task ->
             task.group = "Build Setup"
             task.doLast {
                 project.configurations.findByName(DependencyScopes.schemaDependency)?.run {
@@ -213,9 +213,9 @@ class JsonContractPlugin : Plugin<Project> {
                 }
             }
         }
-        project.tasks.getByName(EventTasks.testEvents).dependsOn(EventTasks.downloadSchemaDependencies)
-        project.tasks.getByName(EventTasks.createSchemaTar).dependsOn(EventTasks.downloadSchemaDependencies)
-        project.tasks.getByName(ExternalTasks.generateJsonSchema2Pojo).dependsOn(EventTasks.downloadSchemaDependencies)
+        project.tasks.getByName(ContractTasks.testContracts).dependsOn(ContractTasks.downloadSchemaDependencies)
+        project.tasks.getByName(ContractTasks.createSchemaTar).dependsOn(ContractTasks.downloadSchemaDependencies)
+        project.tasks.getByName(ExternalTasks.generateJsonSchema2Pojo).dependsOn(ContractTasks.downloadSchemaDependencies)
 
         project.tasks.getByName(ExternalTasks.clean) {
             val clean = it as Delete
@@ -266,7 +266,7 @@ class JsonContractPlugin : Plugin<Project> {
                 }
             }
         }
-        project.tasks.findByName(ExternalTasks.localPublishTask)?.dependsOn(EventTasks.createSchemaTar)
-        project.tasks.findByName(ExternalTasks.remotePublishTask)?.dependsOn(EventTasks.createSchemaTar)
+        project.tasks.findByName(ExternalTasks.localPublishTask)?.dependsOn(ContractTasks.createSchemaTar)
+        project.tasks.findByName(ExternalTasks.remotePublishTask)?.dependsOn(ContractTasks.createSchemaTar)
     }
 }

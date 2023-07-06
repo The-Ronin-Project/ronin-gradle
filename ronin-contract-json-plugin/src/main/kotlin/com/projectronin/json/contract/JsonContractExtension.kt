@@ -9,9 +9,9 @@ import org.gradle.api.provider.Property
 /**
  * Extension defining the configuration for the [JsonContractPlugin]
  */
-interface EventContractExtension {
+interface JsonContractExtension {
     companion object {
-        const val NAME = "events"
+        const val NAME = "contracts"
     }
 
     /**
@@ -20,7 +20,7 @@ interface EventContractExtension {
     val specVersion: Property<VersionFlag>
 
     /**
-     * List of keywords that should be ignored while validating the event contracts. This may help ensure that validation
+     * List of keywords that should be ignored while validating the json contracts. This may help ensure that validation
      * errors or warnings are not produced for items that may be necessary in the schema for generation or other processing.
      */
     val ignoredValidationKeywords: ListProperty<String>
@@ -35,4 +35,4 @@ interface EventContractExtension {
     val exampleSourceDir: DirectoryProperty
 }
 
-internal fun Project.eventContractExtension(): EventContractExtension = extensions.getByName(EventContractExtension.NAME) as EventContractExtension
+internal fun Project.jsonContractExtension(): JsonContractExtension = extensions.getByName(JsonContractExtension.NAME) as JsonContractExtension

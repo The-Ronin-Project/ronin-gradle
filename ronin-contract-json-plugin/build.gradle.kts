@@ -16,7 +16,7 @@ dependencies {
 
 gradlePlugin {
     plugins {
-        create("eventContractPlugin") {
+        create("jsonContractPlugin") {
             id = "com.projectronin.json.contract"
             implementationClass = "com.projectronin.json.contract.JsonContractPlugin"
         }
