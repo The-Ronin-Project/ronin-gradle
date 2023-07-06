@@ -107,6 +107,8 @@ sonar {
     }
 }
 
+tasks.getByName("sonar").dependsOn("koverXmlReport")
+
 
 // TODO: Below
 // fun extractPlugins(currentProject: Project): List<Pair<String, String>> {
