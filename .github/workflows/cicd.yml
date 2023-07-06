@@ -18,6 +18,3 @@ jobs:
         with:
           nexus_user: ${{ secrets.NEXUS_MAVEN_USER }}
           nexus_token: ${{ secrets.NEXUS_MAVEN_TOKEN }}
-      - name: diagnose something
-        shell: bash
-        run: git tag
