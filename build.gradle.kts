@@ -103,7 +103,7 @@ sonar {
     properties {
         property("sonar.projectKey", project.name)
         property("sonar.projectName", project.name)
-        property("sonar.coverage.jacoco.xmlReportPaths", layout.buildDirectory.file("coverage/reports/kover/report.xml").get())
+        property("sonar.coverage.jacoco.xmlReportPaths", layout.buildDirectory.file("reports/kover/report.xml").get())
     }
 }
 
