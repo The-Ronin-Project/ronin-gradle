@@ -71,13 +71,6 @@ class JsonContractPluginTestFunctionalTest {
             propertiesText.append("org.gradle.jvmargs=-Xmx512M ${arg}${ideaArguments.joinToString(" ", " ")}")
         }
 
-        File("/Users/rosslodge/temp/args.txt").writeText(
-            """
-            ${arguments.joinToString(" ")}
-            $propertiesText
-            """.trimIndent()
-        )
-
         tempFolder.resolve("gradle.properties").writeText(propertiesText.toString())
         return this
     }
