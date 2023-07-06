@@ -5,6 +5,8 @@ import com.projectronin.json.contract.task.DocumentationTask
 import com.projectronin.json.contract.task.TestTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.file.Directory
 import org.gradle.api.plugins.BasePlugin
@@ -191,25 +193,10 @@ class JsonContractPlugin : Plugin<Project> {
             task.group = "Build Setup"
             task.doLast {
                 project.configurations.findByName(DependencyScopes.schemaDependency)?.run {
-                    dependencies.forEach { dependency ->
-                        when (val dependencyFile = files(dependency).firstOrNull()) {
-                            null -> logger.warn("No dependency files for $dependency")
-                            else ->
-                                if (dependencyFile.name.endsWith("-${Locations.archiveClassifier}.${Locations.archiveExtension}")) {
-                                    val dependencyArtifactId = dependency.name
-                                    val outputFile = outputDir.resolve(dependencyArtifactId)
-                                    val destinationDirectory = outputFile
-                                    if (destinationDirectory.exists()) {
-                                        destinationDirectory.deleteRecursively()
-                                    }
-                                    destinationDirectory.mkdirs()
-                                    project.copy {
-                                        it.from(project.tarTree(dependencyFile))
-                                        it.into(destinationDirectory)
-                                    }
-                                }
+                    dependencies
+                        .forEach { dependency ->
+                            downloadAndExtractDependency(dependency, outputDir, project)
                         }
-                    }
                 }
             }
         }
@@ -222,6 +209,26 @@ class JsonContractPlugin : Plugin<Project> {
             clean.delete += listOf(
                 outputDir.relativeTo(project.rootDir)
             )
+        }
+    }
+
+    private fun Configuration.downloadAndExtractDependency(dependency: Dependency, outputDir: File, project: Project) {
+        when (val dependencyFile = files(dependency).firstOrNull()) {
+            null -> logger.warn("No dependency files for $dependency")
+            else ->
+                if (dependencyFile.name.endsWith("-${Locations.archiveClassifier}.${Locations.archiveExtension}")) {
+                    val dependencyArtifactId = dependency.name
+                    val outputFile = outputDir.resolve(dependencyArtifactId)
+                    val destinationDirectory = outputFile
+                    if (destinationDirectory.exists()) {
+                        destinationDirectory.deleteRecursively()
+                    }
+                    destinationDirectory.mkdirs()
+                    project.copy {
+                        it.from(project.tarTree(dependencyFile))
+                        it.into(destinationDirectory)
+                    }
+                }
         }
     }
 

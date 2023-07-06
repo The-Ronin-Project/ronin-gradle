@@ -13,9 +13,7 @@ import com.projectronin.json.contract.jsonContractExtension
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.TaskAction
 import java.io.File
-import java.net.MalformedURLException
 import java.net.URI
-import java.net.URISyntaxException
 import java.net.URL
 
 /**
@@ -133,13 +131,7 @@ open class TestTask : BaseJsonContractTask() {
         // This is needed in order to hijack the local references for our $id based schemas. Without this, it will attempt
         // to reach out to a remote server hosting the schema, which is not currently our intention, but could be configured in future versions.
         val uriFactory = object : URIFactory {
-            override fun create(uri: String): URI {
-                return try {
-                    URI.create(uri)
-                } catch (e: IllegalArgumentException) {
-                    throw IllegalArgumentException("Unable to create URI.", e)
-                }
-            }
+            override fun create(uri: String): URI = URI.create(uri)
 
             override fun create(baseURI: URI, segment: String): URI {
                 val start = if (schemaId != null && baseURI.toString().startsWith(schemaId)) {
@@ -148,14 +140,7 @@ open class TestTask : BaseJsonContractTask() {
                     baseURI
                 }
 
-                val uri = try {
-                    URL(start.toURL(), segment).toURI()
-                } catch (e: MalformedURLException) {
-                    throw java.lang.IllegalArgumentException("Unable to create URI.", e)
-                } catch (e: URISyntaxException) {
-                    throw java.lang.IllegalArgumentException("Unable to create URI.", e)
-                }
-                return uri
+                return URL(start.toURL(), segment).toURI()
             }
         }
 
