@@ -101,13 +101,13 @@ sonar {
     properties {
         property("sonar.projectKey", project.name)
         property("sonar.projectName", project.name)
-        property("sonar.coverage.jacoco.xmlReportPaths", layout.buildDirectory.file("reports/jacoco/testCodeCoverageReport").get())
+        property("sonar.coverage.jacoco.xmlReportPaths", layout.buildDirectory.file("reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml").get())
     }
 }
 
 reporting {
     reports {
-        val testCodeCoverageReport by creating(JacocoCoverageReport::class) {
+        create("testCodeCoverageReport", JacocoCoverageReport::class) {
             testType.set(TestSuiteType.UNIT_TEST)
         }
     }
