@@ -123,10 +123,10 @@ reporting {
 }
 
 tasks.check {
-    dependsOn(tasks.named<JacocoReport>("testCodeCoverageReport"))
+    finalizedBy("testCodeCoverageReport")
 }
 
-tasks.getByName("sonar").dependsOn("testCodeCoverageReport")
+tasks.getByName("sonar").dependsOn("check")
 
 // TODO: Below
 // fun extractPlugins(currentProject: Project): List<Pair<String, String>> {
