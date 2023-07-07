@@ -92,8 +92,10 @@ subprojects {
         }
     }
 
+
+
     tasks.withType<JacocoReport> {
-        executionData = files("build/jacoco")
+        executionData.setFrom(fileTree(buildDir).include("/jacoco/*.exec"))
     }
 }
 
@@ -109,6 +111,13 @@ reporting {
     reports {
         create("testCodeCoverageReport", JacocoCoverageReport::class) {
             testType.set(TestSuiteType.UNIT_TEST)
+            reportTask {
+                executionData.setFrom(
+                    subprojects.map { subproject ->
+                        fileTree(subproject.buildDir).include("/jacoco/*.exec")
+                    }
+                )
+            }
         }
     }
 }
