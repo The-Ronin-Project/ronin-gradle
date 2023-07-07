@@ -96,6 +96,7 @@ subprojects {
 
     tasks.withType<JacocoReport> {
         executionData.setFrom(fileTree(buildDir).include("/jacoco/*.exec"))
+        dependsOn("test")
     }
 }
 
@@ -117,16 +118,13 @@ reporting {
                         fileTree(subproject.buildDir).include("/jacoco/*.exec")
                     }
                 )
+                dependsOn(subprojects.map { subproject -> ":${subproject.name}:jacocoTestReport" })
             }
         }
     }
 }
 
-tasks.check {
-    finalizedBy("testCodeCoverageReport")
-}
-
-tasks.getByName("sonar").dependsOn("check")
+tasks.getByName("sonar").dependsOn("testCodeCoverageReport")
 
 // TODO: Below
 // fun extractPlugins(currentProject: Project): List<Pair<String, String>> {
