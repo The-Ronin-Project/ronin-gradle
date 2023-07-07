@@ -17,4 +17,4 @@ okhttp = "com.squareup.okhttp3:okhttp:4.10.0"
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version = "11.4.2" }
 axion-release = { id = "pl.allegro.tech.build.axion-release", version = "1.15.3" }
-kover = { id = "org.jetbrains.kotlinx.kover", version = "0.7.2" }
+sonarqube = { id = "org.sonarqube", version = "4.0.0.2929" }

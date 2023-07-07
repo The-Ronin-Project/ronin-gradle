@@ -1,6 +1,7 @@
 rootProject.name = "ronin-gradle"
 
 include("ronin-contract-json-plugin")
+include("ronin-gradle-catalog")
 
 pluginManagement {
     repositories {
