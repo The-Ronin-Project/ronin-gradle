@@ -9,7 +9,9 @@ dependencies {
     implementation("org.semver4j:semver4j:4.3.0")
     implementation("com.github.node-gradle:gradle-node-plugin:3.5.0")
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.5.0.202303070854-r")
-    implementation("org.openapitools:openapi-generator-gradle-plugin:6.4.0")
+    implementation("org.openapitools:openapi-generator-gradle-plugin:6.4.0") {
+        exclude(group = "org.slf4j", module = "slf4j-simple")
+    }
 
     testImplementation(libs.junit.jupiter)
     testImplementation("org.assertj:assertj-core:3.23.1")

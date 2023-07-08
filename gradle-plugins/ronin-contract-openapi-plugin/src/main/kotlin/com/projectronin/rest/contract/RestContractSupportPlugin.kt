@@ -323,9 +323,9 @@ class RestContractSupportPlugin : Plugin<Project> {
                 HttpResponse.BodyHandlers.ofByteArray()
             )
             if (response.statusCode() == 200) {
-                val existingServerDigest = Hex.encodeHexString(MessageDigest.getInstance("MD5").digest(response.body()))
+                val existingServerDigest = Hex.encodeHexString(MessageDigest.getInstance("SHA256").digest(response.body()))
                 val currentFileDigest = Hex.encodeHexString(
-                    MessageDigest.getInstance("MD5").digest(
+                    MessageDigest.getInstance("SHA256").digest(
                         publication.extensions.find { ex -> ex.extension == "json" }!!.artifactFile.readBytes()
                     )
                 )
