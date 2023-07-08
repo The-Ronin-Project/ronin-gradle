@@ -66,13 +66,15 @@ tags on main in the `vX.Y.Z` format will produce a release version.
 
 # Adding plugins
 
-The way this project works, it expects all subprojects except for [ronin-gradle-catalog](ronin-gradle-catalog) to be gradle plugins.  Plugin implementations can produce more than one plugin,
+The way this project works, it expects all subprojects under [gradle-plugins](gradle-plugins) to be gradle plugins.  Plugin implementations can produce more than one plugin,
 can use the `kotlin-dsl` plugin to produce script plugins, or can use `java-gradle-plugin` to produce the plugin code instead.  The only requirement of the plugin itself is that it
 be named with an id of `com.projectronin.SOMETHING`.
 
 Most project configuration is applied by the root [build.gradle.kts](build.gradle.kts) file in this project.  That build file iterates through all subprojects and applies a group-id and
 version, and maven publishing settings.  It applies kotlin-jvm and ktlint, jacoco, java, and java-gradle-plugin to all the subprojects as well.  It configures kotlin compile settings,
 assumes junit platform for tests, and configures the jacoco code coverage tool.
+
+Shared code (code shared between plugins) can be put into modules under [shared-libraries](shared-libraries).  Basic kotlin build setups will be automatically applied to them.
 
 Outside of those conventions applied to all plugins here, module build files can supply their own dependencies, etc.  See [build.gradle.kts](ronin-contract-json-plugin%2Fbuild.gradle.kts)
 for a simple example.

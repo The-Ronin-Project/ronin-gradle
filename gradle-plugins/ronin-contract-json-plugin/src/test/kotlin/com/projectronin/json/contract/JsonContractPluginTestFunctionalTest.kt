@@ -24,7 +24,6 @@ import java.lang.management.ManagementFactory
 import java.net.URL
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * A simple functional test for the 'com.projectronin.rest.contract.support' plugin.
@@ -35,7 +34,7 @@ class JsonContractPluginTestFunctionalTest {
     lateinit var tempFolder: File
 
     companion object {
-        private val testCounter = AtomicInteger(0)
+        fun uniqueFileSuffix(): String = UUID.randomUUID().toString()
     }
 
     private val jsonMapper = ObjectMapper()
@@ -68,7 +67,7 @@ class JsonContractPluginTestFunctionalTest {
         val ideaArguments = arguments.filter { it.matches("""-D.*coverage.*""".toRegex()) }
         val javaAgentArgument = arguments
             .firstOrNull { it.matches("""-javaagent.*(intellij-coverage-agent|jacocoagent.jar).*""".toRegex()) }
-            ?.replace("build/jacoco/test.exec", "${thisProjectDirectory.absolutePath}/build/jacoco/test-${UUID.randomUUID()}.exec")
+            ?.replace("build/jacoco/test.exec", "${thisProjectDirectory.absolutePath}/build/jacoco/test-${uniqueFileSuffix()}.exec")
 
         javaAgentArgument?.let { arg ->
             propertiesText.append("org.gradle.jvmargs=-Xmx512M ${arg}${ideaArguments.joinToString(" ", " ")}")

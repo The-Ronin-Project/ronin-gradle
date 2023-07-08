@@ -8,11 +8,11 @@ plugins {
     alias(libs.plugins.sonarqube)
 }
 
-val gradlePluginSubprojects = subprojects.filter { it.name != "ronin-gradle-catalog" }
+val gradlePluginSubprojects = subprojects.filter { it.parent?.name == "gradle-plugins" }
 
 dependencies {
     gradlePluginSubprojects.forEach { project ->
-        jacocoAggregation(project(":${project.name}"))
+        jacocoAggregation(project(":${project.path}"))
     }
 }
 
@@ -97,7 +97,7 @@ gradlePluginSubprojects.forEach { subProject ->
 
     subProject.tasks.withType<JacocoReport> {
         executionData.setFrom(fileTree(buildDir).include("/jacoco/*.exec"))
-        dependsOn("test")
+        dependsOn(*subProject.tasks.withType<Test>().toTypedArray())
     }
 }
 
@@ -116,11 +116,11 @@ reporting {
             testType.set(TestSuiteType.UNIT_TEST)
             reportTask {
                 executionData.setFrom(
-                    gradlePluginSubprojects.map { subproject ->
+                    subprojects.map { subproject ->
                         fileTree(subproject.buildDir).include("/jacoco/*.exec")
                     }
                 )
-                dependsOn(gradlePluginSubprojects.map { subproject -> ":${subproject.name}:jacocoTestReport" })
+                dependsOn(*subprojects.mapNotNull { p -> p.tasks.findByName("jacocoTestReport") }.toTypedArray())
             }
         }
     }

@@ -1,4 +1,4 @@
-val rootSubprojects = project.rootProject.subprojects.filter { it.name != "ronin-gradle-catalog" }
+val rootSubprojects = project.rootProject.subprojects.filter { it.parent?.name == "gradle-plugins" }
 
 val buildProjects: Configuration by configurations.creating {
     isVisible = false
@@ -12,7 +12,7 @@ plugins {
 }
 
 dependencies {
-    rootSubprojects.forEach { subProject -> buildProjects(project(":${subProject.name}")) }
+    rootSubprojects.forEach { subProject -> buildProjects(project(":${subProject.path}")) }
 }
 
 fun extractPlugins(currentProject: Project): List<Pair<String, String>> {
