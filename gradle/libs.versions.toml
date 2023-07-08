@@ -4,6 +4,15 @@ kotlin = "1.8.22"
 [libraries]
 gradle-kotlin-jvm = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 commons-io = "commons-io:commons-io:2.11.0"
+kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
+swagger-core = "io.swagger.core.v3:swagger-core:2.2.15"
+swagger-parser = "io.swagger.parser.v3:swagger-parser:2.1.16"
+commons-codec = "commons-codec:commons-codec:1.16.0"
+semver = "org.semver4j:semver4j:4.3.0"
+gradle-node = "com.github.node-gradle:gradle-node-plugin:3.5.0"
+jgit = "org.eclipse.jgit:org.eclipse.jgit:6.5.0.202303070854-r"
+gradle-openapi-generator = "org.openapitools:openapi-generator-gradle-plugin:6.4.0"
 json-schema-validator = "com.networknt:json-schema-validator:1.0.85"
 junit-jupiter = "org.junit.jupiter:junit-jupiter:5.9.3"
 mockk = "io.mockk:mockk:1.13.5"
