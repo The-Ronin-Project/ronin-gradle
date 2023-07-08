@@ -119,11 +119,11 @@ class RestContractSupportPlugin : Plugin<Project> {
                     "lint",
                     "--fail-severity=warn",
                     "--ruleset=${
-                        if (project.projectDir.listFiles { f -> f.name == "spectral.yaml" }.isNotEmpty()) {
-                            "spectral.yaml"
-                        } else {
-                            "/etc/contract-tools-config/spectral.yaml"
-                        }
+                    if (project.projectDir.listFiles { f -> f.name == "spectral.yaml" }.isNotEmpty()) {
+                        "spectral.yaml"
+                    } else {
+                        "/etc/contract-tools-config/spectral.yaml"
+                    }
                     }"
                 ) + versionFiles.map { it.schema.absolutePath }
             )
@@ -298,17 +298,17 @@ class RestContractSupportPlugin : Plugin<Project> {
     ): Boolean {
         if (publication.isRelease && !publication.extended) {
             val expectedJsonContentUri = "${
-                task.repository.url.toString().replace("/$".toRegex(), "")
+            task.repository.url.toString().replace("/$".toRegex(), "")
             }/${
-                settings.schemaProjectGroupId.replace(".", "/")
+            settings.schemaProjectGroupId.replace(".", "/")
             }/${
-                settings.schemaProjectArtifactId
+            settings.schemaProjectArtifactId
             }/${
-                publication.version
+            publication.version
             }/${
-                settings.schemaProjectArtifactId
+            settings.schemaProjectArtifactId
             }-${
-                publication.version
+            publication.version
             }.json"
             val client: HttpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
