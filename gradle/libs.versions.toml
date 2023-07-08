@@ -6,6 +6,7 @@ gradle-kotlin-jvm = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", vers
 commons-io = "commons-io:commons-io:2.11.0"
 kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
+kotlin-logging = "io.github.microutils:kotlin-logging-jvm:3.0.5"
 swagger-core = "io.swagger.core.v3:swagger-core:2.2.15"
 swagger-parser = "io.swagger.parser.v3:swagger-parser:2.1.16"
 commons-codec = "commons-codec:commons-codec:1.16.0"

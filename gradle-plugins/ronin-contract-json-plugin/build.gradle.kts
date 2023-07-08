@@ -12,6 +12,7 @@ dependencies {
     testImplementation(gradleTestKit())
     testImplementation(libs.testcontainers)
     testImplementation(libs.okhttp)
+    testImplementation(project(":shared-libraries:gradle-testkit-utilities"))
 }
 
 gradlePlugin {

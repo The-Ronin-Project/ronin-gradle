@@ -5,19 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.TextNode
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
+import com.projectronin.gradle.test.AbstractFunctionalTest
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.assertj.core.api.Assertions.assertThat
 import org.gradle.internal.impldep.org.eclipse.jgit.api.Git
-import org.gradle.testkit.runner.BuildResult
-import org.gradle.testkit.runner.GradleRunner
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.io.TempDir
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
 import java.io.File
-import java.lang.management.ManagementFactory
 import java.net.URL
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -25,44 +22,13 @@ import java.util.concurrent.TimeUnit
 /**
  * A simple functional test for the 'com.projectronin.rest.contract.support' plugin.
  */
-class RestContractSupportPluginFunctionalTest {
-    @field:TempDir
-    lateinit var tempFolder: File
+class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
 
     private val jsonMapper = ObjectMapper()
+
     private val yamlMapper = ObjectMapper(YAMLFactory())
 
-    private fun getProjectDir() = tempFolder
-    private fun getBuildFile() = getProjectDir().resolve("build.gradle.kts")
-    private fun getSettingsFile() = getProjectDir().resolve("settings.gradle.kts")
-
-    private val thisProjectDirectory: File
-        get() = File(File(javaClass.classLoader.getResource("test-apis/v1/questionnaire.json")!!.file).parentFile.absolutePath.replace("/build.*".toRegex(), ""))
-
-    companion object {
-        fun uniqueFileSuffix(): String = UUID.randomUUID().toString()
-    }
-
-    private fun GradleRunner.withCoverage(): GradleRunner {
-        val propertiesText = StringBuilder()
-
-        propertiesText.append("group=com.projectronin.contract.json\n")
-
-        val runtimeMxBean = ManagementFactory.getRuntimeMXBean()
-        val arguments = runtimeMxBean.inputArguments
-
-        val ideaArguments = arguments.filter { it.matches("""-D.*coverage.*""".toRegex()) }
-        val javaAgentArgument = arguments
-            .firstOrNull { it.matches("""-javaagent.*(intellij-coverage-agent|jacocoagent.jar).*""".toRegex()) }
-            ?.replace("build/jacoco/test.exec", "${thisProjectDirectory.absolutePath}/build/jacoco/test-${uniqueFileSuffix()}.exec")
-
-        javaAgentArgument?.let { arg ->
-            propertiesText.append("org.gradle.jvmargs=-Xmx512M ${arg}${ideaArguments.joinToString(" ", " ")}")
-        }
-
-        tempFolder.resolve("gradle.properties").writeText(propertiesText.toString())
-        return this
-    }
+    override val someTestResourcesPath: String = "test-apis/v1/questionnaire.json"
 
     @Test
     fun `lists all the correct tasks`() {
@@ -110,7 +76,11 @@ class RestContractSupportPluginFunctionalTest {
 
     @Test
     fun `lists all the correct tasks with only v1`() {
-        val result = setupTestProject(listOf("tasks", "--stacktrace"), includeV2 = false)
+        val result = setupTestProject(listOf("tasks", "--stacktrace")) { git ->
+            copyBaseResources(includeV2 = false)
+            writeSpectralConfig()
+            commit(git)
+        }
         listOf(
             "cleanApiOutput",
             "compileApi",
@@ -149,7 +119,10 @@ class RestContractSupportPluginFunctionalTest {
             """.trimMargin(),
             fail = true
         ) {
-            (getProjectDir() + "v1/questionnaire.json").copyTo(getProjectDir() + "v1/another-questionnaire.json")
+            copyBaseResources()
+            writeSpectralConfig()
+            (projectDir.resolve("v1/questionnaire.json")).copyTo(projectDir.resolve("v1/another-questionnaire.json"))
+            commit(it)
         }
 
         assertThat(result.output).containsPattern(
@@ -166,7 +139,10 @@ class RestContractSupportPluginFunctionalTest {
             |
             """.trimMargin()
         ) {
-            (getProjectDir() + "v1/questionnaire.json").copyTo(getProjectDir() + "v1/another-questionnaire.json")
+            copyBaseResources()
+            writeSpectralConfig()
+            (projectDir.resolve("v1/questionnaire.json")).copyTo(projectDir.resolve("v1/another-questionnaire.json"))
+            commit(it)
         }
 
         assertThat(result.output).contains("lintApi")
@@ -177,8 +153,11 @@ class RestContractSupportPluginFunctionalTest {
         val result = setupTestProject(
             listOf("incrementApiVersion")
         ) {
-            (getProjectDir() + "v1/questionnaire.json").setVersion("1.0.0")
-            (getProjectDir() + "v2/questionnaire.yml").setVersion("1.0.0")
+            copyBaseResources()
+            writeSpectralConfig()
+            (projectDir.resolve("v1/questionnaire.json")).setVersion("1.0.0")
+            (projectDir.resolve("v2/questionnaire.yml")).setVersion("1.0.0")
+            commit(it)
         }
 
         assertThat(result.output).contains("Task :incrementApiVersion-v1")
@@ -186,8 +165,8 @@ class RestContractSupportPluginFunctionalTest {
         assertThat(result.output).contains("Task :incrementApiVersion")
         assertThat(result.output).contains("Version 1.0.0 doesn't match directory's version of 2.  Will set it to: 2.0.0")
 
-        assertThat((getProjectDir() + "v1/questionnaire.json").readFileVersion()).isEqualTo("1.0.1")
-        assertThat((getProjectDir() + "v2/questionnaire.yml").readFileVersion()).isEqualTo("2.0.0")
+        assertThat((projectDir.resolve("v1/questionnaire.json")).readFileVersion()).isEqualTo("1.0.1")
+        assertThat((projectDir.resolve("v2/questionnaire.yml")).readFileVersion()).isEqualTo("2.0.0")
     }
 
     @Test
@@ -195,36 +174,43 @@ class RestContractSupportPluginFunctionalTest {
         setupTestProject(
             listOf("incrementApiVersion", "-Psnapshot=true")
         ) {
-            (getProjectDir() + "v1/questionnaire.json").setVersion("1.0.0")
-            (getProjectDir() + "v2/questionnaire.yml").setVersion("2.0.0")
+            copyBaseResources()
+            writeSpectralConfig()
+            (projectDir.resolve("v1/questionnaire.json")).setVersion("1.0.0")
+            (projectDir.resolve("v2/questionnaire.yml")).setVersion("2.0.0")
+            commit(it)
         }
 
-        assertThat((getProjectDir() + "v1/questionnaire.json").readFileVersion()).isEqualTo("1.0.1-SNAPSHOT")
-        assertThat((getProjectDir() + "v2/questionnaire.yml").readFileVersion()).isEqualTo("2.0.1-SNAPSHOT")
+        assertThat((projectDir.resolve("v1/questionnaire.json")).readFileVersion()).isEqualTo("1.0.1-SNAPSHOT")
+        assertThat((projectDir.resolve("v2/questionnaire.yml")).readFileVersion()).isEqualTo("2.0.1-SNAPSHOT")
     }
 
     @Test
     fun `increments schema versions to minor version`() {
         setupTestProject(
-            listOf("incrementApiVersion", "-Pversion-increment=MINOR"),
-            includeV2 = false
+            listOf("incrementApiVersion", "-Pversion-increment=MINOR")
         ) {
-            (getProjectDir() + "v1/questionnaire.json").setVersion("1.0.0")
+            copyBaseResources(includeV2 = false)
+            writeSpectralConfig()
+            (projectDir.resolve("v1/questionnaire.json")).setVersion("1.0.0")
+            commit(it)
         }
 
-        assertThat((getProjectDir() + "v1/questionnaire.json").readFileVersion()).isEqualTo("1.1.0")
+        assertThat((projectDir.resolve("v1/questionnaire.json")).readFileVersion()).isEqualTo("1.1.0")
     }
 
     @Test
     fun `increments schema versions removes a snapshot version`() {
         setupTestProject(
-            listOf("incrementApiVersion", "-Pversion-increment=NONE"),
-            includeV2 = false
+            listOf("incrementApiVersion", "-Pversion-increment=NONE")
         ) {
-            (getProjectDir() + "v1/questionnaire.json").setVersion("1.0.0-SNAPSHOT")
+            copyBaseResources(includeV2 = false)
+            writeSpectralConfig()
+            (projectDir.resolve("v1/questionnaire.json")).setVersion("1.0.0-SNAPSHOT")
+            commit(it)
         }
 
-        assertThat((getProjectDir() + "v1/questionnaire.json").readFileVersion()).isEqualTo("1.0.0")
+        assertThat((projectDir.resolve("v1/questionnaire.json")).readFileVersion()).isEqualTo("1.0.0")
     }
 
     @Test
@@ -232,7 +218,6 @@ class RestContractSupportPluginFunctionalTest {
         val result = setupTestProject(
             listOf("lintApi", "--info", "--stacktrace")
         )
-
         assertThat(result.output).contains("No results with a severity of 'warn' or higher found!")
     }
 
@@ -242,13 +227,16 @@ class RestContractSupportPluginFunctionalTest {
             listOf("lintApi"),
             fail = true
         ) {
-            val v1Tree = (getProjectDir() + "v1/questionnaire.json").readTree()
+            copyBaseResources()
+            writeSpectralConfig()
+            val v1Tree = (projectDir.resolve("v1/questionnaire.json")).readTree()
             v1Tree.remove("tags")
-            (getProjectDir() + "v1/questionnaire.json").writeValue(v1Tree)
+            (projectDir.resolve("v1/questionnaire.json")).writeValue(v1Tree)
 
-            val v2Tree = (getProjectDir() + "v2/questionnaire.yml").readTree()
+            val v2Tree = (projectDir.resolve("v2/questionnaire.yml")).readTree()
             (v2Tree["paths"]["/questionnaire"]["post"] as ObjectNode).remove("tags")
-            (getProjectDir() + "v2/questionnaire.yml").writeValue(v2Tree)
+            (projectDir.resolve("v2/questionnaire.yml")).writeValue(v2Tree)
+            commit(it)
         }
 
         assertThat(result.output).contains("operation-tag-defined")
@@ -267,13 +255,16 @@ class RestContractSupportPluginFunctionalTest {
                 
             """.trimIndent()
         ) {
-            val v1Tree = (getProjectDir() + "v1/questionnaire.json").readTree()
+            copyBaseResources()
+            writeSpectralConfig()
+            val v1Tree = (projectDir.resolve("v1/questionnaire.json")).readTree()
             v1Tree.remove("tags")
-            (getProjectDir() + "v1/questionnaire.json").writeValue(v1Tree)
+            (projectDir.resolve("v1/questionnaire.json")).writeValue(v1Tree)
 
-            val v2Tree = (getProjectDir() + "v2/questionnaire.yml").readTree()
+            val v2Tree = (projectDir.resolve("v2/questionnaire.yml")).readTree()
             (v2Tree["paths"]["/questionnaire"]["post"] as ObjectNode).remove("tags")
-            (getProjectDir() + "v2/questionnaire.yml").writeValue(v2Tree)
+            (projectDir.resolve("v2/questionnaire.yml")).writeValue(v2Tree)
+            commit(it)
         }
 
         assertThat(result.output).contains("Task :lintApi SKIPPED")
@@ -294,13 +285,16 @@ class RestContractSupportPluginFunctionalTest {
             listOf("check"),
             fail = true
         ) {
-            val v1Tree = (getProjectDir() + "v1/questionnaire.json").readTree()
+            copyBaseResources()
+            writeSpectralConfig()
+            val v1Tree = (projectDir.resolve("v1/questionnaire.json")).readTree()
             v1Tree.remove("tags")
-            (getProjectDir() + "v1/questionnaire.json").writeValue(v1Tree)
+            (projectDir.resolve("v1/questionnaire.json")).writeValue(v1Tree)
 
-            val v2Tree = (getProjectDir() + "v2/questionnaire.yml").readTree()
+            val v2Tree = (projectDir.resolve("v2/questionnaire.yml")).readTree()
             (v2Tree["paths"]["/questionnaire"]["post"] as ObjectNode).remove("tags")
-            (getProjectDir() + "v2/questionnaire.yml").writeValue(v2Tree)
+            (projectDir.resolve("v2/questionnaire.yml")).writeValue(v2Tree)
+            commit(it)
         }
 
         assertThat(result.output).contains("operation-tag-defined")
@@ -326,18 +320,18 @@ class RestContractSupportPluginFunctionalTest {
         assertThat(result.output).contains("Task :downloadApiDependencies-v2")
         assertThat(result.output).contains("Task :downloadApiDependencies")
 
-        assertThat(getProjectDir() + "v1/.dependencies").exists()
-        assertThat((getProjectDir() + "v1/.dependencies").listFiles()).hasSize(2)
+        assertThat(projectDir.resolve("v1/.dependencies")).exists()
+        assertThat((projectDir.resolve("v1/.dependencies")).listFiles()).hasSize(2)
 
-        assertThat(getProjectDir() + "v1/.dependencies/event-interop-resource-retrieve").exists()
-        assertThat(getProjectDir() + "v1/.dependencies/event-interop-resource-retrieve/META-INF").exists()
-        assertThat(getProjectDir() + "v1/.dependencies/event-interop-resource-retrieve/com").exists()
+        assertThat(projectDir.resolve("v1/.dependencies/event-interop-resource-retrieve")).exists()
+        assertThat(projectDir.resolve("v1/.dependencies/event-interop-resource-retrieve/META-INF")).exists()
+        assertThat(projectDir.resolve("v1/.dependencies/event-interop-resource-retrieve/com")).exists()
 
-        assertThat(getProjectDir() + "v1/.dependencies/com.projectronin.product.json-schema.gradle.plugin").exists()
-        assertThat((getProjectDir() + "v1/.dependencies/com.projectronin.product.json-schema.gradle.plugin").listFiles()).hasSize(1)
-        assertThat(getProjectDir() + "v1/.dependencies/com.projectronin.product.json-schema.gradle.plugin/com.projectronin.product.json-schema.gradle.plugin.pom").exists()
+        assertThat(projectDir.resolve("v1/.dependencies/com.projectronin.product.json-schema.gradle.plugin")).exists()
+        assertThat((projectDir.resolve("v1/.dependencies/com.projectronin.product.json-schema.gradle.plugin")).listFiles()).hasSize(1)
+        assertThat(projectDir.resolve("v1/.dependencies/com.projectronin.product.json-schema.gradle.plugin/com.projectronin.product.json-schema.gradle.plugin.pom")).exists()
 
-        assertThat(getProjectDir() + "v2/.dependencies").doesNotExist()
+        assertThat(projectDir.resolve("v2/.dependencies")).doesNotExist()
     }
 
     // compileTaskName = "compileApi",
@@ -358,8 +352,8 @@ class RestContractSupportPluginFunctionalTest {
                             "lint",
                             "--fail-severity=warn",
                             "--ruleset=spectral.yaml",
-                            "v1/build/${getProjectDir().name}.json",
-                            "v1/build/${getProjectDir().name}.yaml",
+                            "v1/build/${defaultProjectName()}.json",
+                            "v1/build/${defaultProjectName()}.yaml",
                         )
                     )
                 }
@@ -373,21 +367,21 @@ class RestContractSupportPluginFunctionalTest {
                             "lint",
                             "--fail-severity=warn",
                             "--ruleset=spectral.yaml",
-                            "v2/build/${getProjectDir().name}.json",
-                            "v2/build/${getProjectDir().name}.yaml",
+                            "v2/build/${defaultProjectName()}.json",
+                            "v2/build/${defaultProjectName()}.yaml",
                         )
                     )
                 }
             """.trimIndent()
         )
 
-        assertThat(getProjectDir() + "v1/build").exists()
-        assertThat(getProjectDir() + "v1/build/${getProjectDir().name}.json").exists()
-        assertThat(getProjectDir() + "v1/build/${getProjectDir().name}.yaml").exists()
+        assertThat(projectDir.resolve("v1/build")).exists()
+        assertThat(projectDir.resolve("v1/build/${defaultProjectName()}.json")).exists()
+        assertThat(projectDir.resolve("v1/build/${defaultProjectName()}.yaml")).exists()
 
-        assertThat(getProjectDir() + "v2/build").exists()
-        assertThat(getProjectDir() + "v2/build/${getProjectDir().name}.json").exists()
-        assertThat(getProjectDir() + "v2/build/${getProjectDir().name}.yaml").exists()
+        assertThat(projectDir.resolve("v2/build")).exists()
+        assertThat(projectDir.resolve("v2/build/${defaultProjectName()}.json")).exists()
+        assertThat(projectDir.resolve("v2/build/${defaultProjectName()}.yaml")).exists()
     }
 
     @Test
@@ -396,13 +390,13 @@ class RestContractSupportPluginFunctionalTest {
             listOf("build")
         )
 
-        assertThat(getProjectDir() + "v1/build").exists()
-        assertThat(getProjectDir() + "v1/build/${getProjectDir().name}.json").exists()
-        assertThat(getProjectDir() + "v1/build/${getProjectDir().name}.yaml").exists()
+        assertThat(projectDir.resolve("v1/build")).exists()
+        assertThat(projectDir.resolve("v1/build/${defaultProjectName()}.json")).exists()
+        assertThat(projectDir.resolve("v1/build/${defaultProjectName()}.yaml")).exists()
 
-        assertThat(getProjectDir() + "v2/build").exists()
-        assertThat(getProjectDir() + "v2/build/${getProjectDir().name}.json").exists()
-        assertThat(getProjectDir() + "v2/build/${getProjectDir().name}.yaml").exists()
+        assertThat(projectDir.resolve("v2/build")).exists()
+        assertThat(projectDir.resolve("v2/build/${defaultProjectName()}.json")).exists()
+        assertThat(projectDir.resolve("v2/build/${defaultProjectName()}.yaml")).exists()
     }
 
     // docsTaskName = "generateApiDocumentation",
@@ -412,11 +406,11 @@ class RestContractSupportPluginFunctionalTest {
             listOf("generateApiDocumentation")
         )
 
-        assertThat(getProjectDir() + "v1/docs").exists()
-        assertThat(getProjectDir() + "v1/docs/index.html").exists()
-        assertThat((getProjectDir() + "v1/docs").listFiles()).hasSize(1)
+        assertThat(projectDir.resolve("v1/docs")).exists()
+        assertThat(projectDir.resolve("v1/docs/index.html")).exists()
+        assertThat((projectDir.resolve("v1/docs")).listFiles()).hasSize(1)
 
-        assertThat(getProjectDir() + "openapitools.json").doesNotExist()
+        assertThat(projectDir.resolve("openapitools.json")).doesNotExist()
     }
 
     // cleanTaskName = "cleanApiOutput",
@@ -425,34 +419,37 @@ class RestContractSupportPluginFunctionalTest {
         setupTestProject(
             listOf("clean")
         ) {
-            copyDirectory("test-apis/v1/questionnaire.json", "v1/build")
-            copyDirectory("test-apis/v1/questionnaire.json", "v1/docs")
-            copyDirectory("test-apis/v1/questionnaire.json", "v1/.dependencies")
+            copyBaseResources()
+            writeSpectralConfig()
+            copyResourceDir("test-apis/v1/questionnaire.json", tempFolder.resolve("v1/build"))
+            copyResourceDir("test-apis/v1/questionnaire.json", tempFolder.resolve("v1/docs"))
+            copyResourceDir("test-apis/v1/questionnaire.json", tempFolder.resolve("v1/.dependencies"))
 
-            assertThat(getProjectDir() + "v1/docs").exists()
-            assertThat(getProjectDir() + "v1/build").exists()
-            assertThat(getProjectDir() + "v1/.dependencies").exists()
+            assertThat(projectDir.resolve("v1/docs")).exists()
+            assertThat(projectDir.resolve("v1/build")).exists()
+            assertThat(projectDir.resolve("v1/.dependencies")).exists()
 
-            copyDirectory("test-apis/v1/questionnaire.json", "v2/build")
-            copyDirectory("test-apis/v1/questionnaire.json", "v2/docs")
-            copyDirectory("test-apis/v1/questionnaire.json", "v2/.dependencies")
+            copyResourceDir("test-apis/v1/questionnaire.json", tempFolder.resolve("v2/build"))
+            copyResourceDir("test-apis/v1/questionnaire.json", tempFolder.resolve("v2/docs"))
+            copyResourceDir("test-apis/v1/questionnaire.json", tempFolder.resolve("v2/.dependencies"))
 
-            assertThat(getProjectDir() + "v2/docs").exists()
-            assertThat(getProjectDir() + "v2/build").exists()
-            assertThat(getProjectDir() + "v2/.dependencies").exists()
+            assertThat(projectDir.resolve("v2/docs")).exists()
+            assertThat(projectDir.resolve("v2/build")).exists()
+            assertThat(projectDir.resolve("v2/.dependencies")).exists()
+            commit(it)
         }
 
-        assertThat(getProjectDir() + "v1").exists()
-        assertThat(getProjectDir() + "v1/questionnaire.json").exists()
-        assertThat(getProjectDir() + "v1/docs").doesNotExist()
-        assertThat(getProjectDir() + "v1/build").doesNotExist()
-        assertThat(getProjectDir() + "v1/.dependencies").doesNotExist()
+        assertThat(projectDir.resolve("v1")).exists()
+        assertThat(projectDir.resolve("v1/questionnaire.json")).exists()
+        assertThat(projectDir.resolve("v1/docs")).doesNotExist()
+        assertThat(projectDir.resolve("v1/build")).doesNotExist()
+        assertThat(projectDir.resolve("v1/.dependencies")).doesNotExist()
 
-        assertThat(getProjectDir() + "v2").exists()
-        assertThat(getProjectDir() + "v2/questionnaire.yml").exists()
-        assertThat(getProjectDir() + "v2/docs").doesNotExist()
-        assertThat(getProjectDir() + "v2/build").doesNotExist()
-        assertThat(getProjectDir() + "v2/.dependencies").doesNotExist()
+        assertThat(projectDir.resolve("v2")).exists()
+        assertThat(projectDir.resolve("v2/questionnaire.yml")).exists()
+        assertThat(projectDir.resolve("v2/docs")).doesNotExist()
+        assertThat(projectDir.resolve("v2/build")).doesNotExist()
+        assertThat(projectDir.resolve("v2/.dependencies")).doesNotExist()
     }
 
     // tarTaskName = "tarApi",
@@ -470,15 +467,15 @@ class RestContractSupportPluginFunctionalTest {
             """.trimIndent()
         )
 
-        assertThat(getProjectDir() + "v1/build/${getProjectDir().name}.tar.gz").exists()
-        val tarContents = listOf("tar", "tzvf", "${getProjectDir() + "v1/build/${getProjectDir().name}.tar.gz"}").runCommand(getProjectDir())
+        assertThat(projectDir.resolve("v1/build/${defaultProjectName()}.tar.gz")).exists()
+        val tarContents = listOf("tar", "tzvf", "${projectDir.resolve("v1/build/${defaultProjectName()}.tar.gz")}").runCommand(projectDir)
         assertThat(tarContents).contains("docs/index.html")
         assertThat(tarContents).contains("schemas/shared-complex-types.json")
         assertThat(tarContents).contains("questionnaire.json")
         assertThat(tarContents).contains(".dependencies/event-interop-resource-retrieve/com/projectronin/event/interop/resource/retrieve/v1/InteropResourceRetrieveV1.class")
         assertThat(tarContents).contains(".dependencies/com.projectronin.product.json-schema.gradle.plugin/com.projectronin.product.json-schema.gradle.plugin.pom")
 
-        assertThat(getProjectDir() + "v2/build/${getProjectDir().name}.tar.gz").exists()
+        assertThat(projectDir.resolve("v2/build/${defaultProjectName()}.tar.gz")).exists()
     }
 
     @Test
@@ -487,18 +484,18 @@ class RestContractSupportPluginFunctionalTest {
             listOf("assemble")
         )
 
-        assertThat(getProjectDir() + "v1/build/${getProjectDir().name}.tar.gz").exists()
-        assertThat(getProjectDir() + "v2/build/${getProjectDir().name}.tar.gz").exists()
+        assertThat(projectDir.resolve("v1/build/${defaultProjectName()}.tar.gz")).exists()
+        assertThat(projectDir.resolve("v2/build/${defaultProjectName()}.tar.gz")).exists()
     }
 
     @Test
     fun `local publish succeeds`() {
-        val m2RepositoryDir = getProjectDir() + ".m2/repository"
-        val hostRepositoryDir = getProjectDir() + "host-repository"
-        (hostRepositoryDir + "com/projectronin/rest/contract").mkdirs()
-        (hostRepositoryDir + "com/projectronin/rest/contract/foo.txt").writeText("foo")
-        (hostRepositoryDir + "com/projectronin/rest/contract/bar").mkdirs()
-        (hostRepositoryDir + "com/projectronin/rest/contract/bar/bar.txt").writeText("bar")
+        val m2RepositoryDir = projectDir.resolve(".m2/repository")
+        val hostRepositoryDir = projectDir.resolve("host-repository")
+        (hostRepositoryDir.resolve("com/projectronin/rest/contract")).mkdirs()
+        (hostRepositoryDir.resolve("com/projectronin/rest/contract/foo.txt")).writeText("foo")
+        (hostRepositoryDir.resolve("com/projectronin/rest/contract/bar")).mkdirs()
+        (hostRepositoryDir.resolve("com/projectronin/rest/contract/bar/bar.txt")).writeText("bar")
         setupTestProject(
             listOf("publishToMavenLocal", "-Phost-repository=$hostRepositoryDir"),
             prependedBuildFileText = """
@@ -508,45 +505,48 @@ class RestContractSupportPluginFunctionalTest {
                 rootProject.name = "questionnaire"
             """.trimIndent()
         ) {
+            copyBaseResources()
+            writeSpectralConfig()
             m2RepositoryDir.mkdirs()
+            commit(it)
         }
 
         assertThat(m2RepositoryDir).exists()
 
-        val gitHash = Git.open(getProjectDir()).repository.refDatabase.findRef("HEAD").objectId.abbreviate(7).name()
+        val gitHash = Git.open(projectDir).repository.refDatabase.findRef("HEAD").objectId.abbreviate(7).name()
         val dateString = m2RepositoryDir.walk().find { it.name.matches("v1-[0-9]+-$gitHash".toRegex()) }?.name?.replace("v1-([0-9]+)-$gitHash".toRegex(), "$1") ?: "undated"
 
-        assertThat(m2RepositoryDir + "com/projectronin/rest/contract/questionnaire/1.0.0/questionnaire-1.0.0.json").exists()
-        assertThat(m2RepositoryDir + "com/projectronin/rest/contract/questionnaire/1.0.0/questionnaire-1.0.0.yaml").exists()
-        assertThat(m2RepositoryDir + "com/projectronin/rest/contract/questionnaire/1.0.0/questionnaire-1.0.0.tar.gz").exists()
-        assertThat(m2RepositoryDir + "com/projectronin/rest/contract/questionnaire/2.0.0/questionnaire-2.0.0.tar.gz").exists()
-        assertThat(m2RepositoryDir + "com/projectronin/rest/contract/questionnaire/2.0.0/questionnaire-2.0.0.yaml").exists()
-        assertThat(m2RepositoryDir + "com/projectronin/rest/contract/questionnaire/2.0.0/questionnaire-2.0.0.json").exists()
-        assertThat(m2RepositoryDir + "com/projectronin/rest/contract/questionnaire/v1-$dateString-$gitHash/questionnaire-v1-$dateString-$gitHash.json").exists()
-        assertThat(m2RepositoryDir + "com/projectronin/rest/contract/questionnaire/v1-$dateString-$gitHash/questionnaire-v1-$dateString-$gitHash.yaml").exists()
-        assertThat(m2RepositoryDir + "com/projectronin/rest/contract/questionnaire/v1-$dateString-$gitHash/questionnaire-v1-$dateString-$gitHash.tar.gz").exists()
-        assertThat(m2RepositoryDir + "com/projectronin/rest/contract/questionnaire/v2-$dateString-$gitHash/questionnaire-v2-$dateString-$gitHash.tar.gz").exists()
-        assertThat(m2RepositoryDir + "com/projectronin/rest/contract/questionnaire/v2-$dateString-$gitHash/questionnaire-v2-$dateString-$gitHash.yaml").exists()
-        assertThat(m2RepositoryDir + "com/projectronin/rest/contract/questionnaire/v2-$dateString-$gitHash/questionnaire-v2-$dateString-$gitHash.json").exists()
+        assertThat(m2RepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/1.0.0/questionnaire-1.0.0.json")).exists()
+        assertThat(m2RepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/1.0.0/questionnaire-1.0.0.yaml")).exists()
+        assertThat(m2RepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/1.0.0/questionnaire-1.0.0.tar.gz")).exists()
+        assertThat(m2RepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/2.0.0/questionnaire-2.0.0.tar.gz")).exists()
+        assertThat(m2RepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/2.0.0/questionnaire-2.0.0.yaml")).exists()
+        assertThat(m2RepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/2.0.0/questionnaire-2.0.0.json")).exists()
+        assertThat(m2RepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/v1-$dateString-$gitHash/questionnaire-v1-$dateString-$gitHash.json")).exists()
+        assertThat(m2RepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/v1-$dateString-$gitHash/questionnaire-v1-$dateString-$gitHash.yaml")).exists()
+        assertThat(m2RepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/v1-$dateString-$gitHash/questionnaire-v1-$dateString-$gitHash.tar.gz")).exists()
+        assertThat(m2RepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/v2-$dateString-$gitHash/questionnaire-v2-$dateString-$gitHash.tar.gz")).exists()
+        assertThat(m2RepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/v2-$dateString-$gitHash/questionnaire-v2-$dateString-$gitHash.yaml")).exists()
+        assertThat(m2RepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/v2-$dateString-$gitHash/questionnaire-v2-$dateString-$gitHash.json")).exists()
 
-        assertThat(m2RepositoryDir + "com/projectronin/rest/contract/foo.txt").exists()
-        assertThat(m2RepositoryDir + "com/projectronin/rest/contract/bar/bar.txt").exists()
+        assertThat(m2RepositoryDir.resolve("com/projectronin/rest/contract/foo.txt")).exists()
+        assertThat(m2RepositoryDir.resolve("com/projectronin/rest/contract/bar/bar.txt")).exists()
 
-        assertThat(hostRepositoryDir + "com/projectronin/rest/contract/questionnaire/1.0.0/questionnaire-1.0.0.json").exists()
-        assertThat(hostRepositoryDir + "com/projectronin/rest/contract/questionnaire/1.0.0/questionnaire-1.0.0.yaml").exists()
-        assertThat(hostRepositoryDir + "com/projectronin/rest/contract/questionnaire/1.0.0/questionnaire-1.0.0.tar.gz").exists()
-        assertThat(hostRepositoryDir + "com/projectronin/rest/contract/questionnaire/2.0.0/questionnaire-2.0.0.tar.gz").exists()
-        assertThat(hostRepositoryDir + "com/projectronin/rest/contract/questionnaire/2.0.0/questionnaire-2.0.0.yaml").exists()
-        assertThat(hostRepositoryDir + "com/projectronin/rest/contract/questionnaire/2.0.0/questionnaire-2.0.0.json").exists()
-        assertThat(hostRepositoryDir + "com/projectronin/rest/contract/questionnaire/v1-$dateString-$gitHash/questionnaire-v1-$dateString-$gitHash.json").exists()
-        assertThat(hostRepositoryDir + "com/projectronin/rest/contract/questionnaire/v1-$dateString-$gitHash/questionnaire-v1-$dateString-$gitHash.yaml").exists()
-        assertThat(hostRepositoryDir + "com/projectronin/rest/contract/questionnaire/v1-$dateString-$gitHash/questionnaire-v1-$dateString-$gitHash.tar.gz").exists()
-        assertThat(hostRepositoryDir + "com/projectronin/rest/contract/questionnaire/v2-$dateString-$gitHash/questionnaire-v2-$dateString-$gitHash.tar.gz").exists()
-        assertThat(hostRepositoryDir + "com/projectronin/rest/contract/questionnaire/v2-$dateString-$gitHash/questionnaire-v2-$dateString-$gitHash.yaml").exists()
-        assertThat(hostRepositoryDir + "com/projectronin/rest/contract/questionnaire/v2-$dateString-$gitHash/questionnaire-v2-$dateString-$gitHash.json").exists()
+        assertThat(hostRepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/1.0.0/questionnaire-1.0.0.json")).exists()
+        assertThat(hostRepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/1.0.0/questionnaire-1.0.0.yaml")).exists()
+        assertThat(hostRepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/1.0.0/questionnaire-1.0.0.tar.gz")).exists()
+        assertThat(hostRepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/2.0.0/questionnaire-2.0.0.tar.gz")).exists()
+        assertThat(hostRepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/2.0.0/questionnaire-2.0.0.yaml")).exists()
+        assertThat(hostRepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/2.0.0/questionnaire-2.0.0.json")).exists()
+        assertThat(hostRepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/v1-$dateString-$gitHash/questionnaire-v1-$dateString-$gitHash.json")).exists()
+        assertThat(hostRepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/v1-$dateString-$gitHash/questionnaire-v1-$dateString-$gitHash.yaml")).exists()
+        assertThat(hostRepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/v1-$dateString-$gitHash/questionnaire-v1-$dateString-$gitHash.tar.gz")).exists()
+        assertThat(hostRepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/v2-$dateString-$gitHash/questionnaire-v2-$dateString-$gitHash.tar.gz")).exists()
+        assertThat(hostRepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/v2-$dateString-$gitHash/questionnaire-v2-$dateString-$gitHash.yaml")).exists()
+        assertThat(hostRepositoryDir.resolve("com/projectronin/rest/contract/questionnaire/v2-$dateString-$gitHash/questionnaire-v2-$dateString-$gitHash.json")).exists()
 
-        assertThat(hostRepositoryDir + "com/projectronin/rest/contract/foo.txt").exists()
-        assertThat(hostRepositoryDir + "com/projectronin/rest/contract/bar/bar.txt").exists()
+        assertThat(hostRepositoryDir.resolve("com/projectronin/rest/contract/foo.txt")).exists()
+        assertThat(hostRepositoryDir.resolve("com/projectronin/rest/contract/bar/bar.txt")).exists()
     }
 
     @Test
@@ -570,7 +570,7 @@ class RestContractSupportPluginFunctionalTest {
             .build()
 
         try {
-            val m2RepositoryDir = getProjectDir() + ".m2/repository"
+            val m2RepositoryDir = projectDir.resolve(".m2/repository")
             val result = setupTestProject(
                 listOf(
                     "publishToMavenLocal",
@@ -589,8 +589,11 @@ class RestContractSupportPluginFunctionalTest {
                     rootProject.name = "questionnaire"
                 """.trimIndent()
             ) {
+                copyBaseResources()
+                writeSpectralConfig()
                 m2RepositoryDir.mkdirs()
-                (getProjectDir() + "v2/questionnaire.yml").setVersion("2.0.0-SNAPSHOT")
+                (projectDir.resolve("v2/questionnaire.yml")).setVersion("2.0.0-SNAPSHOT")
+                commit(it)
             }
 
             assertThat(result.output).contains("Task :publishV1ExtendedPublicationToNexusReleasesRepository\n")
@@ -602,7 +605,7 @@ class RestContractSupportPluginFunctionalTest {
             assertThat(result.output).contains("Task :publishV2PublicationToNexusReleasesRepository SKIPPED")
             assertThat(result.output).contains("Task :publishV2PublicationToNexusSnapshotsRepository\n")
 
-            val gitHash = Git.open(getProjectDir()).repository.refDatabase.findRef("HEAD").objectId.abbreviate(7).name()
+            val gitHash = Git.open(projectDir).repository.refDatabase.findRef("HEAD").objectId.abbreviate(7).name()
             val dateString = m2RepositoryDir.walk().find { it.name.matches("v1-[0-9]+-$gitHash".toRegex()) }?.name?.replace("v1-([0-9]+)-$gitHash".toRegex(), "$1") ?: "undated"
 
             fun verifyFile(
@@ -655,7 +658,8 @@ class RestContractSupportPluginFunctionalTest {
                     "-Pnexus-release-repo=http://localhost:$containerPort/releases/",
                     "-Pnexus-insecure=true"
                 ),
-                fail = false
+                fail = false,
+                emptyMap()
             )
             assertThat(secondResult.output).contains("Task :publishV1ExtendedPublicationToNexusReleasesRepository\n")
             assertThat(secondResult.output).contains("Task :publishV1ExtendedPublicationToNexusSnapshotsRepository SKIPPED")
@@ -690,42 +694,28 @@ class RestContractSupportPluginFunctionalTest {
         mapperForFile(this).writeValue(this, node)
     }
 
-    private fun setupTestProject(
-        buildArguments: List<String>,
-        includeV1: Boolean = true,
-        includeV2: Boolean = true,
-        settingsText: String = "",
-        prependedBuildFileText: String = "",
-        extraBuildFileText: String? = null,
-        fail: Boolean = false,
-        extraStuffToDo: () -> Unit = {}
-    ): BuildResult {
-        val git = Git.init().setDirectory(getProjectDir()).call()
-        File(getProjectDir(), ".gitignore").writeText(".idea/")
-        git.add().addFilepattern(".gitignore").call()
-        git.commit().setMessage("Initial Commit").call()
+    override fun defaultPluginId(): String = "com.projectronin.openapi.contract"
 
-        if (includeV1) {
-            copyDirectory("test-apis/v1/questionnaire.json", "v1")
-        }
-        if (includeV2) {
-            copyDirectory("test-apis/v2/questionnaire.yml", "v2")
-        }
-        getSettingsFile().writeText(settingsText)
-        getBuildFile().writeText("$prependedBuildFileText\n")
-        getBuildFile().appendText(
-            """
+    override fun defaultAdditionalBuildFileText(): String = """
             node {
                download.set(true)
                version.set("18.12.1")
             }
-                
-            plugins {
-                id("com.projectronin.openapi.contract")
-            }
-            """.trimIndent()
-        )
-        (getProjectDir() + "spectral.yaml").writeText(
+    """.trimIndent()
+
+    override fun defaultExtraStuffToDo(git: Git) {
+        copyBaseResources()
+        writeSpectralConfig()
+        commit(git)
+    }
+
+    private fun commit(git: Git) {
+        git.add().addFilepattern("*").call()
+        git.commit().setMessage("Adding necessary resources").call()
+    }
+
+    private fun writeSpectralConfig() {
+        (projectDir.resolve("spectral.yaml")).writeText(
             """
             extends: ["spectral:oas"]
             
@@ -733,40 +723,14 @@ class RestContractSupportPluginFunctionalTest {
               oas3-unused-component: info
             """.trimIndent()
         )
-
-        extraBuildFileText?.run {
-            getBuildFile().appendText("\n$this")
-        }
-
-        extraStuffToDo()
-
-        println("=".repeat(80))
-        println(getBuildFile().readText())
-        println("=".repeat(80))
-
-        // Run the build
-        return runProjectBuild(buildArguments, fail)
     }
 
-    private fun runProjectBuild(buildArguments: List<String>, fail: Boolean): BuildResult {
-        val runner = GradleRunner.create().withCoverage()
-        runner.forwardOutput()
-        runner.withPluginClasspath()
-        runner.withArguments(buildArguments)
-        runner.withProjectDir(getProjectDir())
-        runner.withDebug(System.getenv("DEBUG_RUNNER")?.lowercase() == "true")
-        return if (fail) {
-            runner.buildAndFail()
-        } else {
-            runner.build()
+    private fun copyBaseResources(includeV1: Boolean = true, includeV2: Boolean = true) {
+        if (includeV1) {
+            copyResourceDir("test-apis/v1/questionnaire.json", tempFolder.resolve("v1"))
+        }
+        if (includeV2) {
+            copyResourceDir("test-apis/v2/questionnaire.yml", tempFolder.resolve("v2"))
         }
     }
-
-    private fun copyDirectory(resourceName: String, folderName: String) {
-        val classLoader = javaClass.classLoader
-        val file = File(classLoader.getResource(resourceName)!!.file)
-        file.parentFile.copyRecursively(File(tempFolder, folderName))
-    }
-
-    private operator fun File.plus(other: String): File = File(this, other)
 }

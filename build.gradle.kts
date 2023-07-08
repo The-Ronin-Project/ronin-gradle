@@ -9,6 +9,7 @@ plugins {
 }
 
 val gradlePluginSubprojects = subprojects.filter { it.parent?.name == "gradle-plugins" }
+val librarySubprojects = subprojects.filter { it.parent?.name == "shared-libraries" }
 
 dependencies {
     gradlePluginSubprojects.forEach { project ->
@@ -78,6 +79,35 @@ gradlePluginSubprojects.forEach { subProject ->
         plugin("jacoco")
         plugin("java")
         plugin("java-gradle-plugin")
+    }
+
+    subProject.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+        compilerOptions {
+            freeCompilerArgs.set(listOf("-Xjsr305=strict"))
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
+    }
+
+    subProject.tasks.withType<Test> {
+        useJUnitPlatform()
+        testLogging {
+            events(org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED)
+            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        }
+    }
+
+    subProject.tasks.withType<JacocoReport> {
+        executionData.setFrom(fileTree(buildDir).include("/jacoco/*.exec"))
+        dependsOn(*subProject.tasks.withType<Test>().toTypedArray())
+    }
+}
+
+librarySubprojects.forEach { subProject ->
+    subProject.apply {
+        plugin(kotlinId)
+        plugin(ktlintId)
+        plugin("jacoco")
+        plugin("java")
     }
 
     subProject.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
