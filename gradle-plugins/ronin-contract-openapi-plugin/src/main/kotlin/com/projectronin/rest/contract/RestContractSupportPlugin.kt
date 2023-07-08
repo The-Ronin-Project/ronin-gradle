@@ -34,7 +34,6 @@ import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.lang.IllegalStateException
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -44,7 +43,6 @@ import java.time.Duration
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import kotlin.IllegalStateException
 
 /**
  * A simple 'hello world' plugin.
@@ -121,11 +119,11 @@ class RestContractSupportPlugin : Plugin<Project> {
                     "lint",
                     "--fail-severity=warn",
                     "--ruleset=${
-                    if (project.projectDir.listFiles { f -> f.name == "spectral.yaml" }.isNotEmpty()) {
-                        "spectral.yaml"
-                    } else {
-                        "/etc/contract-tools-config/spectral.yaml"
-                    }
+                        if (project.projectDir.listFiles { f -> f.name == "spectral.yaml" }.isNotEmpty()) {
+                            "spectral.yaml"
+                        } else {
+                            "/etc/contract-tools-config/spectral.yaml"
+                        }
                     }"
                 ) + versionFiles.map { it.schema.absolutePath }
             )
@@ -300,17 +298,17 @@ class RestContractSupportPlugin : Plugin<Project> {
     ): Boolean {
         if (publication.isRelease && !publication.extended) {
             val expectedJsonContentUri = "${
-            task.repository.url.toString().replace("/$".toRegex(), "")
+                task.repository.url.toString().replace("/$".toRegex(), "")
             }/${
-            settings.schemaProjectGroupId.replace(".", "/")
+                settings.schemaProjectGroupId.replace(".", "/")
             }/${
-            settings.schemaProjectArtifactId
+                settings.schemaProjectArtifactId
             }/${
-            publication.version
+                publication.version
             }/${
-            settings.schemaProjectArtifactId
+                settings.schemaProjectArtifactId
             }-${
-            publication.version
+                publication.version
             }.json"
             val client: HttpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
@@ -390,7 +388,7 @@ class RestContractSupportPlugin : Plugin<Project> {
                 val buildDir = versionDir + "build"
                 if (!buildDir.exists()) {
                     if (!buildDir.mkdir()) {
-                        throw IllegalStateException("Could not create directory $buildDir")
+                        logger.warn("Could not create directory $buildDir")
                     }
                 }
                 versionDir.schema.run {
@@ -471,7 +469,7 @@ class RestContractSupportPlugin : Plugin<Project> {
                 file.deleteRecursively()
             } else {
                 if (!file.delete()) {
-                    throw IllegalStateException("Unable to delete file $file")
+                    logger.warn("Unable to delete file $file")
                 }
             }
         }
