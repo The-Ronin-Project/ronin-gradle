@@ -126,4 +126,5 @@ reporting {
     }
 }
 
+tasks.getByName("testCodeCoverageReport").dependsOn(*subprojects.mapNotNull { p -> p.tasks.findByName("jacocoTestReport") }.toTypedArray())
 tasks.getByName("sonar").dependsOn("testCodeCoverageReport")
