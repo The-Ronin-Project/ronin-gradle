@@ -135,7 +135,7 @@ sonar {
     properties {
         property("sonar.projectKey", project.name)
         property("sonar.projectName", project.name)
-        property("sonar.exclusions", "**/test/**")
+        property("sonar.coverage.exclusions", "**/test/**")
         property("sonar.coverage.jacoco.xmlReportPaths", layout.buildDirectory.file("reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml").get())
     }
 }
