@@ -34,6 +34,7 @@ import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.lang.IllegalStateException
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -43,6 +44,7 @@ import java.time.Duration
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import kotlin.IllegalStateException
 
 /**
  * A simple 'hello world' plugin.
@@ -387,7 +389,9 @@ class RestContractSupportPlugin : Plugin<Project> {
             task.doLast {
                 val buildDir = versionDir + "build"
                 if (!buildDir.exists()) {
-                    buildDir.mkdir()
+                    if (!buildDir.mkdir()) {
+                        throw IllegalStateException("Could not create directory $buildDir")
+                    }
                 }
                 versionDir.schema.run {
                     Json.mapper().writer(WriterFactory.jsonPrettyPrinter()).writeValue(File(buildDir, "${settings.schemaProjectArtifactId}.json"), versionDir.openApiSpec)
@@ -466,7 +470,9 @@ class RestContractSupportPlugin : Plugin<Project> {
             if (file.isDirectory) {
                 file.deleteRecursively()
             } else {
-                file.delete()
+                if (!file.delete()) {
+                    throw IllegalStateException("Unable to delete file $file")
+                }
             }
         }
     }
