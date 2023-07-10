@@ -217,7 +217,7 @@ class JsonContractPluginTestFunctionalTest : AbstractFunctionalTest() {
         @Test
         fun `initial version works`() {
             val result = setupTestProject(listOf("currentVersion", "--stacktrace"))
-            assertThat(result.output).contains("1.0.0-SNAPSHOT")
+            assertThat(result.output).contains("Project version: 1.0.0-SNAPSHOT\n")
         }
 
         @Test
@@ -225,7 +225,7 @@ class JsonContractPluginTestFunctionalTest : AbstractFunctionalTest() {
             val result = setupTestProject(listOf("currentVersion", "--stacktrace")) { git ->
                 git.checkout().setCreateBranch(true).setName("DASH-3096-something").call()
             }
-            assertThat(result.output).contains("1.0.0-DASH3096-SNAPSHOT")
+            assertThat(result.output).contains("Project version: 1.0.0-DASH3096-SNAPSHOT\n")
         }
 
         @Test
@@ -233,7 +233,7 @@ class JsonContractPluginTestFunctionalTest : AbstractFunctionalTest() {
             val result = setupTestProject(listOf("currentVersion", "--stacktrace")) { git ->
                 git.checkout().setCreateBranch(true).setName("feature/DASH-3096-something").call()
             }
-            assertThat(result.output).contains("1.0.0-DASH3096-SNAPSHOT")
+            assertThat(result.output).contains("Project version: 1.0.0-DASH3096-SNAPSHOT\n")
         }
 
         @Test
@@ -241,7 +241,7 @@ class JsonContractPluginTestFunctionalTest : AbstractFunctionalTest() {
             val result = setupTestProject(listOf("currentVersion", "--stacktrace")) { git ->
                 git.checkout().setCreateBranch(true).setName("feature/did-something-important").call()
             }
-            assertThat(result.output).contains("1.0.0-feature-did-something-important-SNAPSHOT")
+            assertThat(result.output).contains("Project version: 1.0.0-feature-did-something-important-SNAPSHOT\n")
         }
 
         @Test
@@ -249,7 +249,7 @@ class JsonContractPluginTestFunctionalTest : AbstractFunctionalTest() {
             val result = setupTestProject(listOf("currentVersion", "--stacktrace")) { git ->
                 git.checkout().setCreateBranch(true).setName("version/v1").call()
             }
-            assertThat(result.output).contains("1.0.0-SNAPSHOT")
+            assertThat(result.output).contains("Project version: 1.0.0-SNAPSHOT\n")
         }
 
         @Test
@@ -257,7 +257,15 @@ class JsonContractPluginTestFunctionalTest : AbstractFunctionalTest() {
             val result = setupTestProject(listOf("currentVersion", "--stacktrace")) { git ->
                 git.tag().setName("v1.0.0").call()
             }
-            assertThat(result.output).contains("1.0.0")
+            assertThat(result.output).contains("Project version: 1.0.0\n")
+        }
+
+        @Test
+        fun `tag works with ref name`() {
+            val result = setupTestProject(listOf("currentVersion", "--stacktrace"), env = mapOf("REF_NAME" to "v1.0.0")) { git ->
+                git.tag().setName("v1.0.0").call()
+            }
+            assertThat(result.output).contains("Project version: 1.0.0\n")
         }
 
         @Test
@@ -265,7 +273,7 @@ class JsonContractPluginTestFunctionalTest : AbstractFunctionalTest() {
             val result = setupTestProject(listOf("currentVersion", "--stacktrace")) { git ->
                 git.tag().setName("v1.1.0-alpha").call()
             }
-            assertThat(result.output).contains("1.1.0-SNAPSHOT")
+            assertThat(result.output).contains("Project version: 1.1.0-SNAPSHOT\n")
         }
     }
 
