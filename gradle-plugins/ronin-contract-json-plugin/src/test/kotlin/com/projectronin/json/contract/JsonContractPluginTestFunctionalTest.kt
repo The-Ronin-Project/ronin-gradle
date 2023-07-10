@@ -229,9 +229,25 @@ class JsonContractPluginTestFunctionalTest : AbstractFunctionalTest() {
         }
 
         @Test
+        fun `branch works with ticket and no suffix`() {
+            val result = setupTestProject(listOf("currentVersion", "--stacktrace")) { git ->
+                git.checkout().setCreateBranch(true).setName("DASH-3096").call()
+            }
+            assertThat(result.output).contains("Project version: 1.0.0-DASH3096-SNAPSHOT\n")
+        }
+
+        @Test
         fun `feature branch works`() {
             val result = setupTestProject(listOf("currentVersion", "--stacktrace")) { git ->
                 git.checkout().setCreateBranch(true).setName("feature/DASH-3096-something").call()
+            }
+            assertThat(result.output).contains("Project version: 1.0.0-DASH3096-SNAPSHOT\n")
+        }
+
+        @Test
+        fun `feature branch with ticket and no suffix works`() {
+            val result = setupTestProject(listOf("currentVersion", "--stacktrace")) { git ->
+                git.checkout().setCreateBranch(true).setName("feature/DASH-3096").call()
             }
             assertThat(result.output).contains("Project version: 1.0.0-DASH3096-SNAPSHOT\n")
         }
