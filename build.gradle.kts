@@ -1,49 +1,161 @@
-
-
 plugins {
-    kotlin("jvm")
-    `kotlin-dsl`
-    id("org.jlleitschuh.gradle.ktlint")
-    id("io.spring.dependency-management")
-
-    id("com.projectronin.interop.gradle.base")
-    id("com.projectronin.interop.gradle.junit")
-    id("com.projectronin.interop.gradle.jacoco")
-    id("com.projectronin.interop.gradle.publish")
+    `maven-publish`
+    base
+    id("jacoco-report-aggregation")
+    alias(libs.plugins.axion.release)
+    alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.ktlint) apply false
+    alias(libs.plugins.sonarqube)
 }
 
-repositories {
-    maven {
-        url = uri("https://repo.devops.projectronin.io/repository/maven-public/")
-        mavenContent {
-            releasesOnly()
+val gradlePluginSubprojects = subprojects.filter { it.parent?.name == "gradle-plugins" }
+val librarySubprojects = subprojects.filter { it.parent?.name == "shared-libraries" }
+
+dependencies {
+    gradlePluginSubprojects.forEach { project ->
+        jacocoAggregation(project(":${project.path}"))
+    }
+}
+
+scmVersion {
+    tag {
+        initialVersion { _, _ -> "1.0.0" }
+    }
+    versionCreator { versionFromTag, position ->
+        val branchName = System.getenv("REF_NAME")?.ifBlank { null } ?: position.branch
+        val supportedHeads = setOf("master", "main")
+        if (!supportedHeads.contains(branchName) && !branchName.matches("^version/v\\d+$".toRegex())) {
+            val jiraBranchRegex = Regex("(?:.*/)?(\\w+)-(\\d+)-(.+)")
+            val match = jiraBranchRegex.matchEntire(branchName)
+            val branchExtension = match?.let {
+                val (jiraProject, ticketNumber, _) = it.destructured
+                "$jiraProject$ticketNumber"
+            } ?: branchName
+
+            "$versionFromTag-$branchExtension"
+        } else {
+            versionFromTag
+        }
+    }
+}
+
+val projectVersion: String = scmVersion.version
+val kotlinId: String = libs.plugins.kotlin.jvm.get().pluginId
+val ktlintId: String = libs.plugins.ktlint.get().pluginId
+
+allprojects {
+    group = "com.projectronin.services.gradle"
+    version = projectVersion
+
+    apply {
+        plugin("maven-publish")
+    }
+
+    publishing {
+        publications {
+            repositories {
+                maven {
+                    name = "nexus"
+                    credentials {
+                        username = System.getenv("NEXUS_USER")
+                        password = System.getenv("NEXUS_TOKEN")
+                    }
+                    url = if (project.version.toString().endsWith("SNAPSHOT")) {
+                        uri("https://repo.devops.projectronin.io/repository/maven-snapshots/")
+                    } else {
+                        uri("https://repo.devops.projectronin.io/repository/maven-releases/")
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+gradlePluginSubprojects.forEach { subProject ->
+    subProject.apply {
+        plugin(kotlinId)
+        plugin(ktlintId)
+        plugin("jacoco")
+        plugin("java")
+        plugin("java-gradle-plugin")
+    }
+
+    subProject.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+        compilerOptions {
+            freeCompilerArgs.set(listOf("-Xjsr305=strict"))
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
     }
 
-    mavenCentral()
-    maven(url = "https://plugins.gradle.org/m2/")
-}
+    subProject.tasks.withType<Test> {
+        useJUnitPlatform()
+        testLogging {
+            events(org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED)
+            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        }
+    }
 
-dependencies {
-    implementation("com.projectronin.interop.gradle.base:com.projectronin.interop.gradle.base.gradle.plugin:1.0.0")
-    implementation("com.projectronin.interop.gradle.junit:com.projectronin.interop.gradle.junit.gradle.plugin:1.0.0")
-    implementation("com.projectronin.interop.gradle.jacoco:com.projectronin.interop.gradle.jacoco.gradle.plugin:1.0.0")
-    implementation("com.projectronin.interop.gradle.publish:com.projectronin.interop.gradle.publish.gradle.plugin:1.0.0")
-
-    implementation("org.springframework.boot:spring-boot-gradle-plugin:2.6.1")
-    implementation("org.springframework.boot:spring-boot-dependencies:2.6.3")
-    implementation("io.spring.gradle:dependency-management-plugin:1.0.11.RELEASE")
-
-    implementation("gradle.plugin.com.google.cloud.tools:jib-gradle-plugin:3.1.4")
-    implementation("de.undercouch:gradle-download-task:4.1.2")
-}
-
-// ktlint includes the generated-sources, which includes the classes created by Gradle for these plugins
-ktlint {
-    enableExperimentalRules.set(true)
-    filter {
-        // We should be able to just do a wildcard exclude, but it's not working.
-        // This solution comes from https://github.com/JLLeitschuh/ktlint-gradle/issues/222#issuecomment-480758375
-        exclude { projectDir.toURI().relativize(it.file.toURI()).path.contains("/generated-sources/") }
+    subProject.tasks.withType<JacocoReport> {
+        executionData.setFrom(fileTree(buildDir).include("/jacoco/*.exec"))
+        dependsOn(*subProject.tasks.withType<Test>().toTypedArray())
     }
 }
+
+librarySubprojects.forEach { subProject ->
+    subProject.apply {
+        plugin(kotlinId)
+        plugin(ktlintId)
+        plugin("jacoco")
+        plugin("java")
+    }
+
+    subProject.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+        compilerOptions {
+            freeCompilerArgs.set(listOf("-Xjsr305=strict"))
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
+    }
+
+    subProject.tasks.withType<Test> {
+        useJUnitPlatform()
+        testLogging {
+            events(org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED)
+            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        }
+    }
+
+    subProject.tasks.withType<JacocoReport> {
+        executionData.setFrom(fileTree(buildDir).include("/jacoco/*.exec"))
+        dependsOn(*subProject.tasks.withType<Test>().toTypedArray())
+    }
+}
+
+sonar {
+    properties {
+        property("sonar.projectKey", project.name)
+        property("sonar.projectName", project.name)
+        property("sonar.coverage.exclusions", "**/test/**")
+        property("sonar.coverage.jacoco.xmlReportPaths", layout.buildDirectory.file("reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml").get())
+    }
+}
+
+@Suppress("UnstableApiUsage")
+reporting {
+    reports {
+        create("testCodeCoverageReport", JacocoCoverageReport::class) {
+            testType.set(TestSuiteType.UNIT_TEST)
+            reportTask {
+                executionData.setFrom(
+                    subprojects.map { subproject ->
+                        fileTree(subproject.buildDir).include("/jacoco/*.exec")
+                    }
+                )
+                dependsOn(*subprojects.mapNotNull { p -> p.tasks.findByName("jacocoTestReport") }.toTypedArray())
+            }
+        }
+    }
+}
+
+tasks.getByName("testCodeCoverageReport").dependsOn(*subprojects.mapNotNull { p -> p.tasks.findByName("jacocoTestReport") }.toTypedArray())
+tasks.getByName("sonar").dependsOn("testCodeCoverageReport")

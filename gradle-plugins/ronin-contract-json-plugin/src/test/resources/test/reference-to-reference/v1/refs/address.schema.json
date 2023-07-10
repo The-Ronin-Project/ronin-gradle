@@ -1,0 +1,28 @@
+{
+  "$id": "https://example.com/refs/address.schema.json",
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "title": "Address",
+  "type": "object",
+  "properties": {
+    "line1": {
+      "type": "string",
+      "description": "The first line of the address."
+    },
+    "line2": {
+      "type": "string",
+      "description": "The second line of the address."
+    },
+    "city": {
+      "type": "string",
+      "description": "The city"
+    },
+    "state": {
+      "type": "string",
+      "description": "The state"
+    },
+    "zipcode": {
+      "type": "string",
+      "description": "The zip code"
+    }
+  }
+}

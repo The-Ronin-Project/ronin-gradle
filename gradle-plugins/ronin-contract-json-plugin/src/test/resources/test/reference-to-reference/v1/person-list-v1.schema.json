@@ -1,0 +1,14 @@
+{
+  "$id": "https://example.com/person-list-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "title": "PersonList",
+  "type": "object",
+  "properties": {
+    "people": {
+      "type": "array",
+      "items": {
+        "$ref": "refs/person.schema.json"
+      }
+    }
+  }
+}

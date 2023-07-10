@@ -1,0 +1,21 @@
+{
+  "$id": "https://example.com/medication-v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "title": "Medication",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "The medication's name."
+    },
+    "dose": {
+      "description": "The dose which must be greater than zero.",
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "units": {
+      "type": "string",
+      "description": "The units for the dose."
+    }
+  }
+}
