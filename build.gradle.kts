@@ -105,6 +105,14 @@ gradlePluginSubprojects.forEach { subProject ->
         executionData.setFrom(fileTree(buildDir).include("/jacoco/*.exec"))
         dependsOn(*subProject.tasks.withType<Test>().toTypedArray())
     }
+
+    subProject.extensions.getByType(KtlintExtension::class).apply {
+        filter {
+            exclude { entry ->
+                entry.file.toString().contains("generated-sources")
+            }
+        }
+    }
 }
 
 librarySubprojects.forEach { subProject ->
@@ -113,14 +121,6 @@ librarySubprojects.forEach { subProject ->
         plugin(ktlintId)
         plugin("jacoco")
         plugin("java")
-    }
-
-    subProject.extensions.getByType(KtlintExtension::class).apply {
-        filter {
-            exclude { entry ->
-                entry.file.toString().contains("generated-sources")
-            }
-        }
     }
 
     subProject.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
