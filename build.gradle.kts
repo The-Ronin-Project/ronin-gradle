@@ -1,3 +1,5 @@
+import org.jlleitschuh.gradle.ktlint.KtlintExtension
+
 plugins {
     `maven-publish`
     base
@@ -111,6 +113,14 @@ librarySubprojects.forEach { subProject ->
         plugin(ktlintId)
         plugin("jacoco")
         plugin("java")
+    }
+
+    subProject.extensions.getByType(KtlintExtension::class).apply {
+        filter {
+            exclude { entry ->
+                entry.file.toString().contains("generated-sources")
+            }
+        }
     }
 
     subProject.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
