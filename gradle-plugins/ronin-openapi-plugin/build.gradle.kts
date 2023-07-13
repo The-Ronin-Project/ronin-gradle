@@ -12,6 +12,8 @@ dependencies {
     compileOnly(libs.fabrikt)
 
     testImplementation(libs.assertj)
+    testImplementation(gradleTestKit())
+    testImplementation(project(":shared-libraries:gradle-testkit-utilities"))
 }
 
 kotlin {

@@ -1,6 +1,8 @@
 package com.projectronin.openapi
 
+import com.projectronin.gradle.test.AbstractFunctionalTest
 import org.assertj.core.api.Assertions.assertThat
+import org.gradle.internal.impldep.org.eclipse.jgit.api.Git
 import org.gradle.testkit.runner.GradleRunner
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -9,39 +11,16 @@ import java.nio.file.Path
 import java.util.zip.ZipFile
 
 @Suppress("UsePropertyAccessSyntax")
-class OpenApiKotlinGeneratorFunctionalTest {
+class OpenApiKotlinGeneratorFunctionalTest : AbstractFunctionalTest() {
 
     @TempDir
     lateinit var tempDir: Path
 
-    private fun getProjectDir() = tempDir.toFile()
-    private fun getBuildFile() = getProjectDir().resolve("build.gradle")
-    private fun getSettingsFile() = getProjectDir().resolve("settings.gradle")
-
     @Test
     fun `can run task`() {
-        // Setup the test build
-        getSettingsFile().writeText("")
-        getBuildFile().writeText(
-            """
-                plugins {
-                    id('com.projectronin.openapi')
-                }
-                
-                repositories {
-                    mavenLocal()
-                    mavenCentral()
-                }
-            """.trimIndent()
+        val result = setupTestProject(
+            listOf("generateOpenApiCode", "--stacktrace")
         )
-
-        // Run the build
-        val runner = GradleRunner.create()
-        runner.forwardOutput()
-        runner.withPluginClasspath()
-        runner.withArguments("generateOpenApiCode", "--stacktrace")
-        runner.withProjectDir(getProjectDir())
-        val result = runner.build()
 
         // Verify the result
         with(result.output) {
@@ -56,13 +35,13 @@ class OpenApiKotlinGeneratorFunctionalTest {
         val resource = javaClass.classLoader.getResource("generation-test/settings.gradle.kts")
         assertThat(resource).describedAs("Resource must not be null").isNotNull()
         val generationTestInputDirectory = File(resource!!.file).parentFile
-        generationTestInputDirectory.copyRecursively(getProjectDir())
+        generationTestInputDirectory.copyRecursively(projectDir)
 
         val runner = GradleRunner.create()
         runner.forwardOutput()
         runner.withPluginClasspath()
         runner.withArguments("build", "--stacktrace")
-        runner.withProjectDir(getProjectDir())
+        runner.withProjectDir(projectDir)
         val result = runner.build()
 
         with(tempDir.toFile().resolve("app/build/generated/openapi-kotlin-generator/kotlin/com/examples/externalmodels/api/v1/models/PolymorphicEnumDiscriminator.kt").readText()) {
@@ -93,13 +72,13 @@ class OpenApiKotlinGeneratorFunctionalTest {
         val resource = javaClass.classLoader.getResource("dependency-generation-test/settings.gradle.kts")
         assertThat(resource).describedAs("Resource must not be null").isNotNull()
         val generationTestInputDirectory = File(resource!!.file).parentFile
-        generationTestInputDirectory.copyRecursively(getProjectDir())
+        generationTestInputDirectory.copyRecursively(projectDir)
 
         val runner = GradleRunner.create()
         runner.forwardOutput()
         runner.withPluginClasspath()
         runner.withArguments("assemble", "--stacktrace")
-        runner.withProjectDir(getProjectDir())
+        runner.withProjectDir(projectDir)
         val result = runner.build()
 
         assertThat(tempDir.toFile().resolve("app/build/generated/openapi-kotlin-generator/resources/META-INF/resources/v1/questionnaire.json")).exists()
@@ -114,5 +93,20 @@ class OpenApiKotlinGeneratorFunctionalTest {
         with(result.output) {
             assertThat(this).contains("BUILD SUCCESSFUL")
         }
+    }
+
+    override val someTestResourcesPath: String = "generation-test/settings.gradle.kts"
+
+    override fun defaultPluginId(): String = "com.projectronin.openapi"
+
+    override fun defaultAdditionalBuildFileText(): String = """
+            node {
+               download.set(true)
+               version.set("18.12.1")
+            }
+    """.trimIndent()
+
+    override fun defaultExtraStuffToDo(git: Git) {
+
     }
 }
