@@ -5,7 +5,7 @@ import com.projectronin.gradle.test.AbstractFunctionalTest
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.assertj.core.api.Assertions.assertThat
-import org.gradle.internal.impldep.org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.Git
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

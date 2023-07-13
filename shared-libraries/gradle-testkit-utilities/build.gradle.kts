@@ -1,7 +1,8 @@
 dependencies {
-    implementation(libs.junit.jupiter)
-    implementation(libs.testcontainers)
-    implementation(libs.okhttp)
-    implementation(gradleTestKit())
-    implementation(libs.kotlin.logging)
+    api(libs.junit.jupiter)
+    api(libs.testcontainers)
+    api(libs.okhttp)
+    api(gradleTestKit())
+    api(libs.kotlin.logging)
+    api(libs.jgit)
 }
