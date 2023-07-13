@@ -1,7 +1,5 @@
 package com.projectronin.localct
 
-import gradle.kotlin.dsl.accessors._dbb15c6bfb5bdc33b23d8c76d8272896.testing
-
 plugins {
     kotlin("jvm")
     java
