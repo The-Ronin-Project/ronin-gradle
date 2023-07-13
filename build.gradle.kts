@@ -148,7 +148,7 @@ sonar {
     properties {
         property("sonar.projectKey", project.name)
         property("sonar.projectName", project.name)
-        property("sonar.coverage.exclusions", "**/test/**,**/generated-sources/**,**/*.kts")
+        property("sonar.coverage.exclusions", "**/test/**,**/generated-sources/**,**/*.kts,**/kotlin/dsl/accessors/**")
         property("sonar.coverage.jacoco.xmlReportPaths", layout.buildDirectory.file("reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml").get())
     }
 }
@@ -165,6 +165,11 @@ reporting {
                     }
                 )
                 dependsOn(*subprojects.mapNotNull { p -> p.tasks.findByName("jacocoTestReport") }.toTypedArray())
+                classDirectories.setFrom(
+                    subprojects.map { subproject ->
+                        fileTree(subproject.buildDir.resolve("classes")).exclude("**/kotlin/dsl/accessors/**")
+                    }
+                )
             }
         }
     }
