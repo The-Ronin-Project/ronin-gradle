@@ -1,7 +1,6 @@
 package com.projectronin.localct
 
 plugins {
-    kotlin("jvm")
     java
     `jvm-test-suite`
 }

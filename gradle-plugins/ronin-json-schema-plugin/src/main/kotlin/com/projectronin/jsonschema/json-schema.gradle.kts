@@ -8,7 +8,6 @@ import java.io.FileFilter
 import java.net.URL
 
 plugins {
-    kotlin("jvm")
     java
 }
 
@@ -51,10 +50,10 @@ abstract class JsonSchemaImportTask : DefaultTask() {
 
     init {
         generatedClasses.mkdirs()
-        project.tasks.compileJava {
+        project.tasks.getByName("compileJava") {
             dependsOn(this@JsonSchemaImportTask)
         }
-        project.tasks.compileKotlin {
+        project.tasks.getByName("compileKotlin") {
             dependsOn(this@JsonSchemaImportTask)
         }
 
