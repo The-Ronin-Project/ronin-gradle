@@ -1,8 +1,24 @@
 [versions]
+java = "17"
 kotlin = "1.8.22"
+detekt = "1.23.0"
+kover = "0.6.1"
+swaggerparser = "2.1.11"
+fabrikt = "8.8.0"
+springboot = "3.0.6"
+springdependencymanager = "1.1.0"
+ktlint = "11.3.1"
 
 [libraries]
 gradle-kotlin-jvm = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+gradle-kotlin-noarg = { module = "org.jetbrains.kotlin:kotlin-noarg", version.ref = "kotlin" }
+gradle-kotlin-allopen = { module = "org.jetbrains.kotlin:kotlin-allopen", version.ref = "kotlin" }
+gradle-springboot = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "springboot" }
+gradle-springdepmanager = { module = "io.spring.gradle:dependency-management-plugin", version.ref = "springdependencymanager" }
+gradle-ktlint = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlint" }
+gradle-kover = { module = "org.jetbrains.kotlinx:kover", version.ref = "kover" }
+gradle-detekt = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+
 commons-io = "commons-io:commons-io:2.11.0"
 kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
@@ -22,6 +38,8 @@ assertj = "org.assertj:assertj-core:3.23.1"
 axion-release = "pl.allegro.tech.build:axion-release-plugin:1.15.3"
 testcontainers = "org.testcontainers:testcontainers:1.17.6"
 okhttp = "com.squareup.okhttp3:okhttp:4.10.0"
+swaggerparser = { module = "io.swagger.parser.v3:swagger-parser", version.ref = "swaggerparser" }
+fabrikt = { module = "com.cjbooms:fabrikt", version.ref = "fabrikt" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

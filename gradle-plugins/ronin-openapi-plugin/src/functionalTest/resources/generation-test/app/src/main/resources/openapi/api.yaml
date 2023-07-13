@@ -1,0 +1,22 @@
+openapi: 3.0.0
+paths:
+  '/foo':
+    get:
+      operationId: getFoo
+      responses:
+        '200':
+          description: Return something
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wrapper'
+info:
+  title: ""
+  version: ""
+components:
+  schemas:
+    Wrapper:
+      type: object
+      properties:
+        polymorph:
+          $ref: 'external-models.yaml#/components/schemas/PolymorphicEnumDiscriminator'

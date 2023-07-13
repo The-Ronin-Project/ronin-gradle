@@ -1,10 +1,10 @@
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     `kotlin-dsl`
 }
 
 dependencies {
     api(libs.gradle.kotlin.jvm)
-    api(libs.jsonschematopojo)
 }
 
 kotlin {
