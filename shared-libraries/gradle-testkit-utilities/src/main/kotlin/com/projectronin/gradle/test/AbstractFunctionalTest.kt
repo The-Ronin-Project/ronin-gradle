@@ -1,7 +1,7 @@
 package com.projectronin.gradle.test
 
 import mu.KotlinLogging
-import org.gradle.internal.impldep.org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.Git
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import org.junit.jupiter.api.io.TempDir
