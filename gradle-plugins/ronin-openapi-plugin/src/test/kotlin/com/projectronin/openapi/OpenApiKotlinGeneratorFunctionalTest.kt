@@ -3,9 +3,7 @@ package com.projectronin.openapi
 import com.projectronin.gradle.test.AbstractFunctionalTest
 import org.assertj.core.api.Assertions.assertThat
 import org.eclipse.jgit.api.Git
-import org.gradle.testkit.runner.GradleRunner
 import org.junit.jupiter.api.Test
-import java.io.File
 import java.util.zip.ZipFile
 
 class OpenApiKotlinGeneratorFunctionalTest : AbstractFunctionalTest() {
@@ -58,17 +56,12 @@ class OpenApiKotlinGeneratorFunctionalTest : AbstractFunctionalTest() {
 
     @Test
     fun `can generate code using a dependency`() {
-        val resource = javaClass.classLoader.getResource("dependency-generation-test/settings.gradle.kts")
-        assertThat(resource).describedAs("Resource must not be null").isNotNull()
-        val generationTestInputDirectory = File(resource!!.file).parentFile
-        generationTestInputDirectory.copyRecursively(projectDir)
-
-        val runner = GradleRunner.create()
-        runner.forwardOutput()
-        runner.withPluginClasspath()
-        runner.withArguments("assemble", "--stacktrace")
-        runner.withProjectDir(projectDir)
-        val result = runner.build()
+        val result = setupTestProject(
+            listOf("assemble", "--stacktrace")
+        ) {
+            settingsFile.appendText("\n include(\"app\")\n")
+            copyResourceDir("dependency-generation-test/placeholder", tempFolder)
+        }
 
         assertThat(tempFolder.resolve("app/build/generated/openapi-kotlin-generator/resources/META-INF/resources/v1/questionnaire.json")).exists()
         assertThat(tempFolder.resolve("app/build/generated/openapi-kotlin-generator/kotlin/com/projectronin/services/questionnaire/api/v1/models/AbstractQuestionGroup.kt")).exists()
