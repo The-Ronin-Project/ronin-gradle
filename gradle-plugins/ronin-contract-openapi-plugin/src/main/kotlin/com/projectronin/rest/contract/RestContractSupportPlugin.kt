@@ -1,12 +1,24 @@
 package com.projectronin.rest.contract
 
 import com.github.gradle.node.npm.task.NpxTask
+import com.projectronin.gradle.helpers.BaseGradlePluginIdentifiers
+import com.projectronin.gradle.helpers.RELEASES_REPO_NAME
+import com.projectronin.gradle.helpers.SNAPSHOTS_REPO_NAME
+import com.projectronin.gradle.helpers.applyPlugin
+import com.projectronin.gradle.helpers.isNexusInsecure
+import com.projectronin.gradle.helpers.nexusPassword
+import com.projectronin.gradle.helpers.nexusPublicRepo
+import com.projectronin.gradle.helpers.nexusReleaseRepo
+import com.projectronin.gradle.helpers.nexusSnapshotRepo
+import com.projectronin.gradle.helpers.nexusUsername
+import com.projectronin.gradle.helpers.registerMavenRepository
 import com.projectronin.rest.contract.model.Settings
 import com.projectronin.rest.contract.model.SettingsImpl
 import com.projectronin.rest.contract.model.VersionDir
 import com.projectronin.rest.contract.model.VersionIncrement
 import com.projectronin.rest.contract.model.VersionPublicationGroup
 import com.projectronin.rest.contract.util.WriterFactory
+import com.projectronin.ronincontractopenapiplugin.DependencyHelper
 import io.swagger.v3.core.util.Json
 import org.apache.commons.codec.binary.Hex
 import org.eclipse.jgit.api.Git
@@ -22,8 +34,6 @@ import org.gradle.api.internal.artifacts.mvnsettings.DefaultMavenFileLocations
 import org.gradle.api.internal.artifacts.mvnsettings.DefaultMavenSettingsProvider
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.plugins.BasePlugin
-import org.gradle.api.publish.PublishingExtension
-import org.gradle.api.publish.internal.DefaultPublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.gradle.api.tasks.TaskContainer
@@ -53,16 +63,11 @@ class RestContractSupportPlugin : Plugin<Project> {
         private val logger: Logger = LoggerFactory.getLogger(RestContractSupportPlugin::class.java)
     }
 
-    private fun applyPlugin(project: Project, id: String) {
-        if (!project.pluginManager.hasPlugin(id)) {
-            project.pluginManager.apply(id)
-        }
-    }
-
     override fun apply(project: Project) {
-        applyPlugin(project, "com.github.node-gradle.node")
-        applyPlugin(project, "base")
-        applyPlugin(project, "maven-publish")
+        project
+            .applyPlugin(DependencyHelper.Plugins.node.id)
+            .applyPlugin(BaseGradlePluginIdentifiers.base)
+            .applyPlugin(BaseGradlePluginIdentifiers.mavenPublish)
 
         addRepositories(project)
 
@@ -93,11 +98,11 @@ class RestContractSupportPlugin : Plugin<Project> {
             publishCopyTaskName = "copyHostRepoIfNecessary",
             incrementVersionTaskName = "incrementApiVersion",
             mappedMavenRepo = File(project.properties.getOrDefault("host-repository", "/home/ronin/host-repository").toString()),
-            nexusReleaseRepo = project.properties.getOrDefault("nexus-release-repo", "https://repo.devops.projectronin.io/repository/maven-releases/").toString(),
-            nexusSnapshotRepo = project.properties.getOrDefault("nexus-snapshot-repo", "https://repo.devops.projectronin.io/repository/maven-snapshots/").toString(),
-            nexusUsername = project.properties.getOrDefault("nexus-user", System.getenv("NEXUS_USER"))?.toString(),
-            nexusPassword = project.properties.getOrDefault("nexus-password", System.getenv("NEXUS_TOKEN"))?.toString(),
-            isNexusInsecure = project.properties.getOrDefault("nexus-insecure", "false").toString().toBoolean()
+            nexusReleaseRepo = project.nexusReleaseRepo(),
+            nexusSnapshotRepo = project.nexusSnapshotRepo(),
+            nexusUsername = project.nexusUsername(),
+            nexusPassword = project.nexusPassword(),
+            isNexusInsecure = project.isNexusInsecure()
         )
 
         val versionFiles = project.versionFiles(settings)
@@ -197,25 +202,16 @@ class RestContractSupportPlugin : Plugin<Project> {
     }
 
     private fun addRepositories(project: Project) {
-        fun RepositoryHandler.conditionallyAddMavenRepo(uri: String, snapshots: Boolean = false) {
-            if (find { if (it is MavenArtifactRepository) it.url.toString() == uri else false } == null) {
+        fun RepositoryHandler.conditionallyAddMavenRepo(uri: String) {
+            if (find { it is MavenArtifactRepository && it.url.toString() == uri } == null) {
                 maven { ar ->
                     ar.url = URI(uri)
-                    ar.mavenContent { mrcd ->
-                        if (snapshots) {
-                            mrcd.snapshotsOnly()
-                        } else {
-                            mrcd.releasesOnly()
-                        }
-                    }
                 }
             }
         }
 
         project.repositories.run {
-            conditionallyAddMavenRepo("https://repo.devops.projectronin.io/repository/maven-snapshots/", true)
-            conditionallyAddMavenRepo("https://repo.devops.projectronin.io/repository/maven-releases/")
-            conditionallyAddMavenRepo("https://repo.devops.projectronin.io/repository/maven-public/")
+            conditionallyAddMavenRepo(project.nexusPublicRepo())
             if (findByName(ArtifactRepositoryContainer.DEFAULT_MAVEN_LOCAL_REPO_NAME) == null) {
                 mavenLocal()
             }
@@ -228,34 +224,8 @@ class RestContractSupportPlugin : Plugin<Project> {
         settings: SettingsImpl,
         tasks: TaskContainer
     ) {
-        if (project.extensions.findByName(PublishingExtension.NAME) == null) {
-            project.extensions.create(PublishingExtension::class.java, PublishingExtension.NAME, DefaultPublishingExtension::class.java)
-        }
-        (project.extensions.getByName(PublishingExtension.NAME) as PublishingExtension).run {
-            if (repositories.find { r -> r is MavenArtifactRepository } == null) {
-                project.logger.info("Adding maven repository")
-                repositories { rh ->
-                    rh.maven { mar ->
-                        mar.name = "nexusSnapshots"
-                        mar.isAllowInsecureProtocol = settings.isNexusInsecure
-                        mar.credentials { pc ->
-                            pc.username = settings.nexusUsername
-                            pc.password = settings.nexusPassword
-                        }
-                        mar.url = URI(settings.nexusSnapshotRepo)
-                    }
-                    rh.maven { mar ->
-                        mar.name = "nexusReleases"
-                        mar.isAllowInsecureProtocol = settings.isNexusInsecure
-                        mar.credentials { pc ->
-                            pc.username = settings.nexusUsername
-                            pc.password = settings.nexusPassword
-                        }
-                        mar.url = URI(settings.nexusReleaseRepo)
-                    }
-                }
-            }
-            publications { publications ->
+        project.registerMavenRepository(false).apply {
+            publications {
                 versionDir.publications
                     .forEach { publication ->
                         publications.register(
@@ -283,8 +253,8 @@ class RestContractSupportPlugin : Plugin<Project> {
                 tasks.named(publishTaskName, PublishToMavenRepository::class.java) { task ->
                     task.dependsOn(versionDir.asTaskName(settings.tarTaskName))
                     task.onlyIf {
-                        (publication.isSnapshot && task.repository.name == "nexusSnapshots") ||
-                            (publication.isRelease && task.repository.name == "nexusReleases" && isSpecificationChanged(publication, task, settings))
+                        (publication.isSnapshot && task.repository.name == SNAPSHOTS_REPO_NAME) ||
+                            (publication.isRelease && task.repository.name == RELEASES_REPO_NAME && isSpecificationChanged(publication, task, settings))
                     }
                 }
             }
@@ -387,9 +357,7 @@ class RestContractSupportPlugin : Plugin<Project> {
             task.doLast {
                 val buildDir = versionDir + "build"
                 if (!buildDir.exists()) {
-                    if (!buildDir.mkdir()) {
-                        logger.warn("Could not create directory $buildDir")
-                    }
+                    buildDir.mkdirs()
                 }
                 versionDir.schema.run {
                     Json.mapper().writer(WriterFactory.jsonPrettyPrinter()).writeValue(File(buildDir, "${settings.schemaProjectArtifactId}.json"), versionDir.openApiSpec)
@@ -465,13 +433,7 @@ class RestContractSupportPlugin : Plugin<Project> {
 
     private fun deleteIfExists(file: File) {
         if (file.exists()) {
-            if (file.isDirectory) {
-                file.deleteRecursively()
-            } else {
-                if (!file.delete()) {
-                    logger.warn("Unable to delete file $file")
-                }
-            }
+            file.deleteRecursively()
         }
     }
 

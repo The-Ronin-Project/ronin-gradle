@@ -1,3 +1,5 @@
+import com.projectronin.gradle.internal.DependencyHelperExtension
+import com.projectronin.gradle.internal.DependencyHelperGenerator
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
 
 plugins {
@@ -12,6 +14,7 @@ plugins {
 
 val gradlePluginSubprojects = subprojects.filter { it.parent?.name == "gradle-plugins" }
 val librarySubprojects = subprojects.filter { it.parent?.name == "shared-libraries" }
+val mainProjects = gradlePluginSubprojects + librarySubprojects
 
 dependencies {
     gradlePluginSubprojects.forEach { project ->
@@ -60,30 +63,42 @@ allprojects {
         publications {
             repositories {
                 maven {
-                    name = "nexus"
+                    name = "artifactoryReleases"
                     credentials {
                         username = System.getenv("NEXUS_USER")
                         password = System.getenv("NEXUS_TOKEN")
                     }
-                    url = if (project.version.toString().endsWith("SNAPSHOT")) {
-                        uri("https://repo.devops.projectronin.io/repository/maven-snapshots/")
-                    } else {
-                        uri("https://repo.devops.projectronin.io/repository/maven-releases/")
+                    url = uri("https://repo.devops.projectronin.io/repository/maven-releases/")
+                }
+                maven {
+                    name = "artifactorySnapshots"
+                    credentials {
+                        username = System.getenv("NEXUS_USER")
+                        password = System.getenv("NEXUS_TOKEN")
                     }
+                    url = uri("https://repo.devops.projectronin.io/repository/maven-snapshots/")
                 }
             }
         }
     }
+
+    tasks.withType<PublishToMavenRepository>().configureEach {
+        val predicate = provider {
+            (repository.name == "artifactorySnapshots" && version.toString().contains("SNAPSHOT")) ||
+                (repository.name == "artifactoryReleases" && !version.toString().contains("SNAPSHOT"))
+        }
+        onlyIf("publishing snapshot to snapshots repo or release to releases repo") {
+            predicate.get()
+        }
+    }
 }
 
-
-gradlePluginSubprojects.forEach { subProject ->
+mainProjects.forEach { subProject ->
     subProject.apply {
         plugin(kotlinId)
         plugin(ktlintId)
         plugin("jacoco")
         plugin("java")
-        plugin("java-gradle-plugin")
     }
 
     subProject.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
@@ -109,46 +124,54 @@ gradlePluginSubprojects.forEach { subProject ->
     subProject.extensions.getByType(KtlintExtension::class).apply {
         filter {
             exclude { entry ->
-                entry.file.toString().contains("generated-sources")
+                entry.file.toString().contains("generated")
             }
         }
     }
 }
 
-librarySubprojects.forEach { subProject ->
+gradlePluginSubprojects.forEach { subProject ->
     subProject.apply {
-        plugin(kotlinId)
-        plugin(ktlintId)
-        plugin("jacoco")
         plugin("java")
+        plugin("java-gradle-plugin")
     }
 
-    subProject.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        compilerOptions {
-            freeCompilerArgs.set(listOf("-Xjsr305=strict"))
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    val dependencyHelper = subProject.extensions.create("dependencyHelper", DependencyHelperExtension::class.java)
+    dependencyHelper.helperDependencies.convention(emptyMap())
+    dependencyHelper.helperPlugins.convention(emptyMap())
+
+    subProject.task("generateDependencyHelper") {
+        group = BasePlugin.BUILD_GROUP
+        val outputDir: Provider<Directory> = subProject.layout.buildDirectory.dir("generated/sources/dependency-helper")
+        val restResourcesOutputDir: Provider<Directory> = subProject.layout.buildDirectory.dir("generated/test-resources/functional-test-setup")
+
+        (subProject.properties["sourceSets"] as SourceSetContainer?)?.getByName("main")?.java?.srcDir(outputDir)
+        (subProject.properties["sourceSets"] as SourceSetContainer?)?.getByName("test")?.resources?.srcDir(restResourcesOutputDir)
+
+        doLast {
+            DependencyHelperGenerator.generateHelper(outputDir.get().asFile, dependencyHelper, subProject)
+            with(restResourcesOutputDir.get().asFile) {
+                mkdirs()
+                resolve("functional-test.properties").writeText(
+                    """
+                    directory.project=${subProject.projectDir}
+                    directory.build=${subProject.buildDir}
+                    directory.resources=${subProject.buildDir.resolve("resources/test")}
+                """.trimIndent()
+                )
+            }
         }
     }
 
-    subProject.tasks.withType<Test> {
-        useJUnitPlatform()
-        testLogging {
-            events(org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED)
-            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
-        }
-    }
-
-    subProject.tasks.withType<JacocoReport> {
-        executionData.setFrom(fileTree(buildDir).include("/jacoco/*.exec"))
-        dependsOn(*subProject.tasks.withType<Test>().toTypedArray())
-    }
+    subProject.tasks.getByName("runKtlintCheckOverMainSourceSet").dependsOn("generateDependencyHelper")
+    subProject.tasks.getByName("compileKotlin").dependsOn("generateDependencyHelper")
 }
 
 sonar {
     properties {
         property("sonar.projectKey", project.name)
         property("sonar.projectName", project.name)
-        property("sonar.coverage.exclusions", "**/test/**,**/generated-sources/**,**/*.kts,**/kotlin/dsl/accessors/**")
+        property("sonar.coverage.exclusions", "**/test/**,**/generated-sources/**,**/generated/sources/**,**/*.kts,**/kotlin/dsl/accessors/**")
         property("sonar.coverage.jacoco.xmlReportPaths", layout.buildDirectory.file("reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml").get())
     }
 }

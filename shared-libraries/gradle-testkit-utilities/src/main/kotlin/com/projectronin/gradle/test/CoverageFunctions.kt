@@ -6,10 +6,10 @@ import java.lang.management.ManagementFactory
 import java.util.UUID
 
 @ExcludeAsIfGenerated
-fun GradleRunner.withCoverage(pluginProjectDirectory: File, tempFolder: File): GradleRunner {
+fun GradleRunner.withCoverage(pluginProjectDirectory: File, tempFolder: File, groupId: String = "com.projectronin.contract.json"): GradleRunner {
     val propertiesText = StringBuilder()
 
-    propertiesText.append("group=com.projectronin.contract.json\n")
+    propertiesText.append("group=$groupId\n")
 
     val runtimeMxBean = ManagementFactory.getRuntimeMXBean()
     val arguments = runtimeMxBean.inputArguments

@@ -13,6 +13,7 @@ dependencies {
     implementation(libs.gradle.openapi.generator) {
         exclude(group = "org.slf4j", module = "slf4j-simple")
     }
+    implementation(project(":shared-libraries:gradle-helpers"))
 
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.assertj)
@@ -28,4 +29,12 @@ gradlePlugin {
         id = "com.projectronin.openapi.contract"
         implementationClass = "com.projectronin.rest.contract.RestContractSupportPlugin"
     }
+}
+
+dependencyHelper {
+    helperPlugins.set(
+        mapOf(
+            "node" to libs.plugins.node
+        )
+    )
 }

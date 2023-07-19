@@ -10,8 +10,8 @@ class VersionPublicationGroup(
     val isRelease = !isSnapshot
     val publicationName = "V$versionNumber${if (extended) "Extended" else ""}"
     val publishTaskNames: List<String> = listOf(
-        "publish${publicationName}PublicationToNexusSnapshotsRepository",
-        "publish${publicationName}PublicationToNexusReleasesRepository"
+        "publish${publicationName}PublicationToArtifactorySnapshotsRepository",
+        "publish${publicationName}PublicationToArtifactoryReleasesRepository"
     )
     val localPublishTaskName = "publish${publicationName}PublicationToMavenLocal"
 }

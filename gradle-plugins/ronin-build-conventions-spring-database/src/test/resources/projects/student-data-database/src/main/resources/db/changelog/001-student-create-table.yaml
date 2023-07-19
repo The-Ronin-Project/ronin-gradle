@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-student-create-table
+      author: First Last
+      changes:
+        - createTable:
+            tableName: student
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: first_name
+                  type: varchar(255)
+                  constraints: { nullable: false }
+              - column:
+                  name: last_name
+                  type: varchar(255)
+                  constraints: { nullable: false }
+              - column:
+                  name: birth_date
+                  type: datetime(6)
+                  constraints: { nullable: true }
+              - column:
+                  name: favorite_number
+                  type: int
+                  constraints: { nullable: true }
+              - column:
+                  name: created_at
+                  type: timestamp(6)
+                  constraints: { nullable: false }
+              - column:
+                  name: updated_at
+                  type: timestamp(6)
+                  constraints: { nullable: false }

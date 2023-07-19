@@ -1,23 +1,48 @@
 [versions]
-java = "17"
 kotlin = "1.8.22"
 detekt = "1.23.0"
 kover = "0.6.1"
 swaggerparser = "2.1.11"
-fabrikt = "8.8.0"
+fabrikt = "10.0.0"
 springboot = "3.0.6"
 springdependencymanager = "1.1.0"
-ktlint = "11.3.1"
+ktlint = "11.5.0"
+sonarqube = "4.2.1.3168"
+dokka = "1.8.20"
+jackson = "2.15.2"
+testcontainers = "1.17.6"
+axion = "1.15.3"
+jsonschematopojo = "1.2.1"
+node = "3.5.0"
+releasehub = "4.0.0"
+kotlindsl = "4.0.14"
 
 [libraries]
 gradle-kotlin-jvm = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
-gradle-kotlin-noarg = { module = "org.jetbrains.kotlin:kotlin-noarg", version.ref = "kotlin" }
-gradle-kotlin-allopen = { module = "org.jetbrains.kotlin:kotlin-allopen", version.ref = "kotlin" }
-gradle-springboot = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "springboot" }
-gradle-springdepmanager = { module = "io.spring.gradle:dependency-management-plugin", version.ref = "springdependencymanager" }
 gradle-ktlint = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlint" }
 gradle-kover = { module = "org.jetbrains.kotlinx:kover", version.ref = "kover" }
 gradle-detekt = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+gradle-sonarqube = { module = "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin", version.ref = "sonarqube" }
+gradle-dokka = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
+gradle-spring-boot = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "springboot" }
+gradle-spring-depmanager = { module = "io.spring.gradle:dependency-management-plugin", version.ref = "springdependencymanager" }
+gradle-spring-kotlin-core = { module = "org.jetbrains.kotlin:kotlin-allopen", version.ref = "kotlin" }
+gradle-spring-kotlin-jpa = { module = "org.jetbrains.kotlin:kotlin-noarg", version.ref = "kotlin" }
+gradle-axion-release = { module = "pl.allegro.tech.build:axion-release-plugin", version.ref = "axion" }
+gradle-jsonschematopojo = { module = "org.jsonschema2pojo:jsonschema2pojo-gradle-plugin", version.ref = "jsonschematopojo" }
+gradle-node = { module = "com.github.node-gradle:gradle-node-plugin", version.ref = "node" }
+gradle-openapi-generator = "org.openapitools:openapi-generator-gradle-plugin:6.4.0"
+gradle-releasehub = { module = "com.dipien:releases-hub-gradle-plugin", version.ref = "releasehub" }
+gradle-kotlin-dsl = { module = "org.gradle.kotlin:gradle-kotlin-dsl-plugins", version.ref = "kotlindsl" }
+
+gradle-api = { module = "dev.gradleplugins:gradle-api", version = "8.2" }
+
+spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "springboot" }
+spring-boot-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-annotation-processor = { module = "org.springframework.boot:spring-boot-configuration-processor", version.ref = "springboot" }
+
+liquibase-core = { module = "org.liquibase:liquibase-core" }
+mysql-connector = { module = "com.mysql:mysql-connector-j" }
 
 commons-io = "commons-io:commons-io:2.11.0"
 kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
@@ -27,22 +52,32 @@ swagger-core = "io.swagger.core.v3:swagger-core:2.2.15"
 swagger-parser = "io.swagger.parser.v3:swagger-parser:2.1.16"
 commons-codec = "commons-codec:commons-codec:1.16.0"
 semver = "org.semver4j:semver4j:4.3.0"
-gradle-node = "com.github.node-gradle:gradle-node-plugin:3.5.0"
 jgit = "org.eclipse.jgit:org.eclipse.jgit:6.5.0.202303070854-r"
-gradle-openapi-generator = "org.openapitools:openapi-generator-gradle-plugin:6.4.0"
 json-schema-validator = "com.networknt:json-schema-validator:1.0.85"
 junit-jupiter = "org.junit.jupiter:junit-jupiter:5.9.3"
 mockk = "io.mockk:mockk:1.13.5"
-jsonschematopojo = "org.jsonschema2pojo:jsonschema2pojo-gradle-plugin:1.2.1"
 assertj = "org.assertj:assertj-core:3.23.1"
-axion-release = "pl.allegro.tech.build:axion-release-plugin:1.15.3"
-testcontainers = "org.testcontainers:testcontainers:1.17.6"
+testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+testcontainers-mysql = { module = "org.testcontainers:mysql", version.ref = "testcontainers" }
 okhttp = "com.squareup.okhttp3:okhttp:4.10.0"
 swaggerparser = { module = "io.swagger.parser.v3:swagger-parser", version.ref = "swaggerparser" }
 fabrikt = { module = "com.cjbooms:fabrikt", version.ref = "fabrikt" }
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jakarta-validation-api = "jakarta.validation:jakarta.validation-api:3.0.2"
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-ktlint = { id = "org.jlleitschuh.gradle.ktlint", version = "11.4.2" }
-axion-release = { id = "pl.allegro.tech.build.axion-release", version = "1.15.3" }
-sonarqube = { id = "org.sonarqube", version = "4.0.0.2929" }
+kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+axion-release = { id = "pl.allegro.tech.build.axion-release", version.ref = "axion" }
+sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+spring-boot = { id = "org.springframework.boot", version.ref = "springboot" }
+spring-depmanager = { id = "io.spring.dependency-management", version.ref = "springdependencymanager" }
+spring-kotlin-core = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+spring-kotlin-jpa = { id = "org.jetbrains.kotlin.plugin.jpa", version.ref = "kotlin" }
+jsonschematopojo = { id = "org.jsonschema2pojo", version.ref = "jsonschematopojo" }
+node = { id = "com.github.node-gradle.node", version.ref = "node" }
+releasehub = { id = "com.dipien.releaseshub.gradle.plugin", version.ref = "releasehub" }
+kotlin-dsl = { id = "org.gradle.kotlin.kotlin-dsl", version.ref = "kotlindsl" }

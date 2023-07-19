@@ -1,26 +1,13 @@
-@Suppress("DSL_SCOPE_VIOLATION")
-plugins {
-    `kotlin-dsl`
-    `java-gradle-plugin`
-}
-
 dependencies {
-    api(libs.gradle.kotlin.jvm)
-    api(libs.gradle.kotlin.noarg)
-    api(libs.gradle.kotlin.allopen)
-    compileOnly(libs.swaggerparser)
-    compileOnly(libs.fabrikt)
+    implementation(libs.gradle.kotlin.jvm)
+    implementation(libs.swaggerparser)
+    implementation(libs.fabrikt)
+    implementation(project(":shared-libraries:gradle-helpers"))
 
     testImplementation(libs.assertj)
     testImplementation(libs.junit.jupiter)
     testImplementation(gradleTestKit())
     testImplementation(project(":shared-libraries:gradle-testkit-utilities"))
-}
-
-kotlin {
-    jvmToolchain {
-        languageVersion.set(JavaLanguageVersion.of(libs.versions.java.get()))
-    }
 }
 
 gradlePlugin {
@@ -32,9 +19,12 @@ gradlePlugin {
     }
 }
 
-tasks.getByName("processResources", org.gradle.language.jvm.tasks.ProcessResources::class) {
-    expand(
-        "fabriktSpec" to libs.fabrikt.get().toString(),
-        "swaggerparserSpec" to libs.swaggerparser.get().toString()
+dependencyHelper {
+    helperDependencies.set(
+        mapOf(
+            "fabrikt" to libs.fabrikt,
+            "swaggerParser" to libs.swaggerparser,
+            "jakarta" to libs.jakarta.validation.api
+        )
     )
 }

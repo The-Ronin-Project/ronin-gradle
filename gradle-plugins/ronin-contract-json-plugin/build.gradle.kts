@@ -2,8 +2,9 @@ import org.apache.tools.ant.filters.ReplaceTokens
 
 dependencies {
     implementation(libs.json.schema.validator)
-    implementation(libs.jsonschematopojo)
-    implementation(libs.axion.release)
+    implementation(libs.gradle.jsonschematopojo)
+    implementation(project(":shared-libraries:gradle-helpers"))
+    implementation(project(":gradle-plugins:ronin-build-conventions-versioning"))
 
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.mockk)
@@ -36,3 +37,16 @@ tasks.register<Copy>("copyInitializationFiles") {
 }
 
 tasks.getByName("build").dependsOn("copyInitializationFiles")
+
+dependencyHelper {
+    helperPlugins.set(
+        mapOf(
+            "jsonschema2pojo" to libs.plugins.jsonschematopojo
+        )
+    )
+    helperDependencies.set(
+        mapOf(
+            "jacksonAnnotations" to libs.jackson.annotations
+        )
+    )
+}

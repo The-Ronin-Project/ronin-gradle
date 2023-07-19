@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 000-add-pk-to-databasechangelog
+      author: Brad Jacobs
+      changes:
+        - sql:
+            dbms: 'mysql'
+            endDelimiter: \nGO
+            splitStatements: true
+            sql: ALTER TABLE DATABASECHANGELOG ADD PRIMARY KEY(ID,AUTHOR,FILENAME)
+            stripComments: true
+            comment: Force PrimaryKey on DATABASECHANGELOG for replication - "https://github.com/liquibase/liquibase/issues/1918#issuecomment-910558293"
+

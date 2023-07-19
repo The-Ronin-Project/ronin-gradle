@@ -1,0 +1,9 @@
+[versions]
+kotlin = "1.8.22"
+jackson = "2.15.2"
+
+[libraries]
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson"}
+
+[plugins]
+spring-kotlin-core = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }

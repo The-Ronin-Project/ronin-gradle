@@ -1,17 +1,21 @@
 package com.projectronin.json.contract
 
 import com.networknt.schema.SpecVersion
+import com.projectronin.gradle.helpers.DEFAULT_PUBLICATION_NAME
+import com.projectronin.gradle.helpers.JAVA_COMPONENT_NAME
+import com.projectronin.gradle.helpers.applyPlugin
+import com.projectronin.gradle.helpers.compileOnlyDependency
+import com.projectronin.gradle.helpers.registerMavenRepository
 import com.projectronin.json.contract.task.DocumentationTask
 import com.projectronin.json.contract.task.TestTask
+import com.projectronin.roninbuildconventionsversioning.PluginIdentifiers
+import com.projectronin.ronincontractjsonplugin.DependencyHelper
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.Dependency
-import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.file.Directory
 import org.gradle.api.plugins.BasePlugin
-import org.gradle.api.publish.PublishingExtension
-import org.gradle.api.publish.internal.DefaultPublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.bundling.Compression
@@ -19,9 +23,7 @@ import org.gradle.api.tasks.bundling.Tar
 import org.jsonschema2pojo.gradle.JsonSchemaExtension
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import pl.allegro.tech.build.axion.release.domain.VersionConfig
 import java.io.File
-import java.net.URI
 
 /**
  * The JsonContractPlugin provides access to a set of tasks capable of validating and generating documentation for schemas.
@@ -37,41 +39,41 @@ class JsonContractPlugin : Plugin<Project> {
             private const val defaultExamplesDir = "src/test/resources/examples"
             fun exampleSourceDir(project: Project): Directory = project.layout.projectDirectory.dir(defaultExamplesDir)
             fun defaultPackageName(project: Project): String = "com.projectronin.json.${project.name.lowercase().replace("[^a-z]|contract|messaging".toRegex(), "")}"
-            fun versionInfix(project: Project): String = "v${project.version.toString().replace("^([0-9]+)\\..+".toRegex(), "$1")}"
+            private fun versionInfix(project: Project): String = "v${project.version.toString().replace("^([0-9]+)\\..+".toRegex(), "$1")}"
             fun fullPackageName(settings: JsonContractExtension, project: Project): String = "${settings.packageName.get()}.${versionInfix(project)}"
             fun artifactId(project: Project): String = "${project.name}-${versionInfix(project)}"
 
             fun tarDir(project: Project): File = File("${project.buildDir}/tar")
 
-            val archiveExtension = "tar.gz"
-            val archiveClassifier = "schemas"
+            const val archiveExtension = "tar.gz"
+            const val archiveClassifier = "schemas"
             fun archiveFileName(project: Project): String = "${project.name}-$archiveClassifier.$archiveExtension"
             fun dependencyDir(settings: JsonContractExtension): File = settings.schemaSourceDir.get().asFile.resolve(".dependencies")
         }
 
         object ContractTasks {
-            val testContracts = "testContracts"
-            val generateContractDocs = "generateContractDocs"
-            val createSchemaTar = "createSchemaTar"
-            val downloadSchemaDependencies = "downloadSchemaDependencies"
+            const val testContracts = "testContracts"
+            const val generateContractDocs = "generateContractDocs"
+            const val createSchemaTar = "createSchemaTar"
+            const val downloadSchemaDependencies = "downloadSchemaDependencies"
         }
 
         object ExternalTasks {
-            val check = "check"
-            val clean = "clean"
-            val jar = "jar"
-            val assemble = "assemble"
-            val generateJsonSchema2Pojo = "generateJsonSchema2Pojo"
-            val localPublishTask = "publishMavenPublicationToMavenLocal"
-            val remotePublishTask = "publishMavenPublicationToNexusRepository"
+            const val check = "check"
+            const val clean = "clean"
+            const val jar = "jar"
+            const val assemble = "assemble"
+            const val generateJsonSchema2Pojo = "generateJsonSchema2Pojo"
+            const val localPublishTask = "publishMavenPublicationToMavenLocal"
+
+            const val remoteSnapshotPublishTask = "publishMavenPublicationToArtifactorySnapshotsRepository"
+            const val remoteReleasePublishTask = "publishMavenPublicationToArtifactoryReleasesRepository"
         }
 
         object DependentPlugins {
             const val base: String = "base"
             const val java: String = "java"
             const val mavenPublish: String = "maven-publish"
-            const val jsonSchema2Pojo: String = "org.jsonschema2pojo"
-            const val axionRelease: String = "pl.allegro.tech.build.axion-release"
         }
 
         object Extensions {
@@ -83,66 +85,17 @@ class JsonContractPlugin : Plugin<Project> {
             const val compileOnly = "compileOnly"
             const val schemaDependency = "schemaDependency"
         }
-
-        object Dependencies {
-            const val jacksonAnnotations = "com.fasterxml.jackson.core:jackson-annotations:2.15.2"
-        }
-
-        object ProjectProperties {
-            val nexusRepoName = "nexus"
-            fun nexusReleaseRepo(project: Project): String = project.properties.getOrDefault("nexus-release-repo", "https://repo.devops.projectronin.io/repository/maven-releases/").toString()
-            fun nexusSnapshotRepo(project: Project): String = project.properties.getOrDefault("nexus-snapshot-repo", "https://repo.devops.projectronin.io/repository/maven-snapshots/").toString()
-            fun nexusUsername(project: Project): String? = project.properties.getOrDefault("nexus-user", System.getenv("NEXUS_USER"))?.toString()
-            fun nexusPassword(project: Project): String? = project.properties.getOrDefault("nexus-password", System.getenv("NEXUS_TOKEN"))?.toString()
-            fun isNexusInsecure(project: Project): Boolean = project.properties.getOrDefault("nexus-insecure", "false").toString().toBoolean()
-        }
-    }
-
-    private fun applyPlugin(project: Project, id: String) {
-        if (!project.pluginManager.hasPlugin(id)) {
-            project.pluginManager.apply(id)
-        }
     }
 
     override fun apply(project: Project) {
-        applyPlugin(project, DependentPlugins.base)
-        applyPlugin(project, DependentPlugins.java)
-        applyPlugin(project, DependentPlugins.mavenPublish)
-        applyPlugin(project, DependentPlugins.jsonSchema2Pojo)
-        applyPlugin(project, DependentPlugins.axionRelease)
+        project
+            .applyPlugin(DependentPlugins.base)
+            .applyPlugin(DependentPlugins.java)
+            .applyPlugin(DependentPlugins.mavenPublish)
+            .applyPlugin(DependencyHelper.Plugins.jsonschema2pojo.id)
+            .applyPlugin(PluginIdentifiers.buildconventionsVersioning)
 
-        val versionExtension = (project.extensions.findByType(VersionConfig::class.java) ?: project.extensions.create(Extensions.axionRelease, VersionConfig::class.java))
-
-        versionExtension.apply {
-            tag.apply {
-                initialVersion { _, _ -> "1.0.0" }
-            }
-            versionCreator { versionFromTag, position ->
-                val branchName = System.getenv("REF_NAME")?.ifBlank { null } ?: position.branch
-                val supportedHeads = setOf("master", "main")
-                // this code ensures that we get a labeled version for anything that's not master, main, or version/v<NUMBER> or v<NUMBER>.<NUMBER>.<NUMBER>,
-                // but that we get a PLAIN version for  master, main, or version/v<NUMBER> or v<NUMBER>.<NUMBER>.<NUMBER>,
-                // The jiraBranchRegex tries to identify a ticket project-<NUMBER> format and uses that as the label
-                if (!supportedHeads.contains(branchName) && !branchName.matches("^version/v\\d+$".toRegex()) && !branchName.matches("^v\\d+\\.\\d+\\.\\d+$".toRegex())) {
-                    val jiraBranchRegex = Regex("(?:.*/)?(\\w+)-(\\d+)(?:-(.+))?")
-                    val match = jiraBranchRegex.matchEntire(branchName)
-                    val branchExtension = match?.let {
-                        val (jiraProject, ticketNumber, _) = it.destructured
-                        "$jiraProject$ticketNumber"
-                    } ?: branchName
-
-                    "$versionFromTag-$branchExtension"
-                } else {
-                    versionFromTag
-                }
-            }
-        }
-
-        project.version = versionExtension.version
-
-        project.dependencies.apply {
-            add(DependencyScopes.compileOnly, Dependencies.jacksonAnnotations)
-        }
+        project.compileOnlyDependency(DependencyHelper.jacksonAnnotations)
 
         project.configurations.create(DependencyScopes.schemaDependency)
 
@@ -222,14 +175,13 @@ class JsonContractPlugin : Plugin<Project> {
                 if (dependencyFile.name.endsWith("-${Locations.archiveClassifier}.${Locations.archiveExtension}")) {
                     val dependencyArtifactId = dependency.name
                     val outputFile = outputDir.resolve(dependencyArtifactId)
-                    val destinationDirectory = outputFile
-                    if (destinationDirectory.exists()) {
-                        destinationDirectory.deleteRecursively()
+                    if (outputFile.exists()) {
+                        outputFile.deleteRecursively()
                     }
-                    destinationDirectory.mkdirs()
+                    outputFile.mkdirs()
                     project.copy {
                         it.from(project.tarTree(dependencyFile))
-                        it.into(destinationDirectory)
+                        it.into(outputFile)
                     }
                 }
         }
@@ -239,36 +191,13 @@ class JsonContractPlugin : Plugin<Project> {
         project: Project,
         tarFileLocation: File
     ) {
-        if (project.extensions.findByName(PublishingExtension.NAME) == null) {
-            project.extensions.create(PublishingExtension::class.java, PublishingExtension.NAME, DefaultPublishingExtension::class.java)
-        }
-        (project.extensions.getByName(PublishingExtension.NAME) as PublishingExtension).run {
-            if (repositories.find { r -> r is MavenArtifactRepository } == null) {
-                project.logger.info("Adding maven repository")
-                repositories { rh ->
-                    rh.maven { mar ->
-                        mar.name = ProjectProperties.nexusRepoName
-                        mar.isAllowInsecureProtocol = ProjectProperties.isNexusInsecure(project)
-                        mar.credentials { pc ->
-                            pc.username = ProjectProperties.nexusUsername(project)
-                            pc.password = ProjectProperties.nexusPassword(project)
-                        }
-                        mar.url = URI(
-                            if (project.version.toString().contains("SNAPSHOT")) {
-                                ProjectProperties.nexusSnapshotRepo(project)
-                            } else {
-                                ProjectProperties.nexusReleaseRepo(project)
-                            }
-                        )
-                    }
-                }
-            }
+        project.registerMavenRepository().apply {
             publications { publications ->
-                publications.register("Maven", MavenPublication::class.java) { mp ->
+                publications.register(DEFAULT_PUBLICATION_NAME, MavenPublication::class.java) { mp ->
                     mp.groupId = project.group.toString()
                     mp.artifactId = Locations.artifactId(project)
                     mp.version = project.version.toString()
-                    mp.from(project.components.getByName("java"))
+                    mp.from(project.components.getByName(JAVA_COMPONENT_NAME))
                     mp.artifact(tarFileLocation.absolutePath) { ma ->
                         ma.extension = Locations.archiveExtension
                         ma.classifier = Locations.archiveClassifier
@@ -277,6 +206,7 @@ class JsonContractPlugin : Plugin<Project> {
             }
         }
         project.tasks.findByName(ExternalTasks.localPublishTask)?.dependsOn(ContractTasks.createSchemaTar)
-        project.tasks.findByName(ExternalTasks.remotePublishTask)?.dependsOn(ContractTasks.createSchemaTar)
+        project.tasks.findByName(ExternalTasks.remoteSnapshotPublishTask)?.dependsOn(ContractTasks.createSchemaTar)
+        project.tasks.findByName(ExternalTasks.remoteReleasePublishTask)?.dependsOn(ContractTasks.createSchemaTar)
     }
 }
