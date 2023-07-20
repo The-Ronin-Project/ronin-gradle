@@ -17,7 +17,7 @@ Assuming your project follows the instructions in [README.md](../../README.md), 
 
 ```kotlin
 plugins {
-    alias(roningradle.plugins.ronin.gradle.buildconventions.gradleplugin)
+    alias(roningradle.plugins.buildconventions.gradleplugin)
 }
 
 gradlePlugin {

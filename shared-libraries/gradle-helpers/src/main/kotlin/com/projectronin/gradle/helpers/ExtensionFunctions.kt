@@ -1,6 +1,7 @@
 package com.projectronin.gradle.helpers
 
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.publish.PublishingExtension
@@ -100,6 +101,36 @@ fun Project.registerMavenRepository(registerDefaultJavaPublication: Boolean = fa
                     mp.from(components.getByName(JAVA_COMPONENT_NAME))
                 }
             }
+        }
+    }
+}
+
+fun Task.addDependentTaskByName(nameToAdd: String, targetProject: Project = this.project) {
+    when (val targetProjectTask = targetProject.tasks.findByName(nameToAdd)) {
+        null -> targetProject.tasks.whenTaskAdded { addedTask ->
+            if (addedTask.name == nameToAdd && this != addedTask) {
+                targetProject.logger.debug("Lazy adding ${addedTask.name} to ${targetProject.path}:$name")
+                dependsOn(addedTask)
+            }
+        }
+
+        else -> {
+            targetProject.logger.debug("Initially adding ${targetProjectTask.name} to ${targetProject.path}:$name")
+            dependsOn(targetProjectTask)
+        }
+    }
+}
+
+fun Task.addDependentTaskByType(taskType: Class<out Task>, targetProject: Project = this.project) {
+    val initialTasks = targetProject.tasks.withType(taskType)
+    if (initialTasks.isNotEmpty()) {
+        targetProject.logger.debug("Initially adding ${initialTasks.joinToString { it.name }} to ${targetProject.path}:$name")
+        dependsOn(*initialTasks.toTypedArray())
+    }
+    targetProject.tasks.whenTaskAdded { addedTask ->
+        if (taskType.isAssignableFrom(addedTask.javaClass) && this != addedTask) {
+            targetProject.logger.debug("Lazy adding ${addedTask.name} to ${targetProject.path}:$name")
+            dependsOn(addedTask)
         }
     }
 }

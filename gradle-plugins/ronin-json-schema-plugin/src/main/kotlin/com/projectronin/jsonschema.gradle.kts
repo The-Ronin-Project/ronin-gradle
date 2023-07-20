@@ -1,5 +1,10 @@
-package com.projectronin.jsonschema
+package com.projectronin
 
+import gradle.kotlin.dsl.accessors._7758f57c6dd35933dbd9dc8c103ba8e9.implementation
+import gradle.kotlin.dsl.accessors._7758f57c6dd35933dbd9dc8c103ba8e9.sourceSets
+import org.gradle.kotlin.dsl.create
+import org.gradle.kotlin.dsl.dependencies
+import org.gradle.kotlin.dsl.java
 import org.jsonschema2pojo.GenerationConfig
 import org.jsonschema2pojo.Jsonschema2Pojo
 import org.jsonschema2pojo.gradle.GradleRuleLogger

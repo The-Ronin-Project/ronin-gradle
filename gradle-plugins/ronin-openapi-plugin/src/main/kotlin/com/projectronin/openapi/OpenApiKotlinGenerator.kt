@@ -289,5 +289,9 @@ class OpenApiKotlinGenerator : Plugin<Project> {
         project.tasks.findByName("runKtlintCheckOverMainSourceSet")?.apply {
             dependsOn("generateOpenApiCode")
         }
+
+        project.tasks.findByName("sourcesJar")?.apply {
+            dependsOn("generateOpenApiCode")
+        }
     }
 }

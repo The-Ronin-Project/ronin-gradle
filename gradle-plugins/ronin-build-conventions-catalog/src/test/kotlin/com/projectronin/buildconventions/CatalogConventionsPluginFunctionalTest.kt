@@ -39,12 +39,114 @@ class CatalogConventionsPluginFunctionalTest : AbstractFunctionalTest() {
         assertThat(toml).contains("""kotlin = "1.8.22"""")
 
         assertThat(toml).contains("""ronin-common-middle = {group = "com.projectronin.plugins", name = "middle", version.ref = "ronin-common" }""")
-        assertThat(toml).contains("""ronin-common-subproject- = {group = "com.projectronin.plugins", name = "subproject-01", version.ref = "ronin-common" }""")
+        assertThat(toml).contains("""ronin-common-subproject-01 = {group = "com.projectronin.plugins", name = "subproject-01", version.ref = "ronin-common" }""")
+        assertThat(toml).contains("""ronin-common-subproject-03 = {group = "com.projectronin.plugins", name = "subproject-03", version.ref = "ronin-common" }""")
         assertThat(toml).contains("""jackson-annotations = {group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "jackson" }""")
 
         assertThat(toml).contains("""ronin-common-test-hello-jim = {id = "com.projectronin.test.hello-jim", version.ref = "ronin-common" }""")
         assertThat(toml).contains("""ronin-common-test-hello-world = {id = "com.projectronin.test.hello-world", version.ref = "ronin-common" }""")
         assertThat(toml).contains("""spring-kotlin-core = {id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }""")
+    }
+
+    @Test
+    fun `should build and publish a catalog with config`() {
+        val result = testLocalPublish(
+            listOf("build", "publishToMavenLocal", "--stacktrace"),
+            listOf(
+                ArtifactVerification("catalog", "com.projectronin.plugins", "1.0.0-SNAPSHOT", "toml"),
+                ArtifactVerification("catalog", "com.projectronin.plugins", "1.0.0-SNAPSHOT", "module"),
+                ArtifactVerification("catalog", "com.projectronin.plugins", "1.0.0-SNAPSHOT", "pom")
+            ),
+            projectSetup = ProjectSetup(
+                projectName = "ronin-common"
+            )
+        ) {
+            buildFile.writeText(
+                """
+                 version = "1.0.0-SNAPSHOT"
+                 
+                 subprojects.forEach { it.version = "1.0.0-SNAPSHOT" }
+                """.trimIndent()
+            )
+            copyResourceDir("projects/demo", projectDir)
+            projectDir.resolve("catalog/build.gradle.kts").appendText(
+                """
+                    roninCatalog {
+                       prefix.set("ronin")
+                       includeCatalogFile.set(false)
+                       pluginNameMap.set(mapOf("com.projectronin.test.hello-jim" to "hi"))
+                       libraryNameMap.set(mapOf(":empty-middle:subproject-01" to "project1"))
+                    }
+                """.trimIndent()
+            )
+        }
+        assertThat(result.output).contains("BUILD SUCCESSFUL")
+        assertThat(projectDir.resolve("catalog/build/version-catalog/libs.versions.toml")).exists()
+        val toml = projectDir.resolve("catalog/build/version-catalog/libs.versions.toml").readText()
+
+        assertThat(toml).contains("""ronin = "1.0.0-SNAPSHOT"""")
+        assertThat(toml).doesNotContain("""jackson = "2.15.2"""")
+        assertThat(toml).doesNotContain("""kotlin = "1.8.22"""")
+
+        assertThat(toml).contains("""ronin-middle = {group = "com.projectronin.plugins", name = "middle", version.ref = "ronin" }""")
+        assertThat(toml).contains("""project1 = {group = "com.projectronin.plugins", name = "subproject-01", version.ref = "ronin" }""")
+        assertThat(toml).contains("""ronin-subproject-03 = {group = "com.projectronin.plugins", name = "subproject-03", version.ref = "ronin" }""")
+        assertThat(toml).doesNotContain("""jackson-annotations = {group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "jackson" }""")
+
+        assertThat(toml).contains("""hi = {id = "com.projectronin.test.hello-jim", version.ref = "ronin" }""")
+        assertThat(toml).contains("""ronin-test-hello-world = {id = "com.projectronin.test.hello-world", version.ref = "ronin" }""")
+        assertThat(toml).doesNotContain("""spring-kotlin-core = {id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }""")
+    }
+
+    @Test
+    fun `should build and publish a catalog with config and no prefix`() {
+        val result = testLocalPublish(
+            listOf("build", "publishToMavenLocal", "--stacktrace"),
+            listOf(
+                ArtifactVerification("catalog", "com.projectronin.plugins", "1.0.0-SNAPSHOT", "toml"),
+                ArtifactVerification("catalog", "com.projectronin.plugins", "1.0.0-SNAPSHOT", "module"),
+                ArtifactVerification("catalog", "com.projectronin.plugins", "1.0.0-SNAPSHOT", "pom")
+            ),
+            projectSetup = ProjectSetup(
+                projectName = "ronin-common"
+            )
+        ) {
+            buildFile.writeText(
+                """
+                 version = "1.0.0-SNAPSHOT"
+                 
+                 subprojects.forEach { it.version = "1.0.0-SNAPSHOT" }
+                """.trimIndent()
+            )
+            copyResourceDir("projects/demo", projectDir)
+            projectDir.resolve("catalog/build.gradle.kts").appendText(
+                """
+                    roninCatalog {
+                       includePrefix.set(false)
+                       prefix.set("ronin")
+                       includeCatalogFile.set(false)
+                       pluginNameMap.set(mapOf("com.projectronin.test.hello-jim" to "hi"))
+                       libraryNameMap.set(mapOf(":empty-middle:subproject-01" to "project1"))
+                    }
+                """.trimIndent()
+            )
+        }
+        assertThat(result.output).contains("BUILD SUCCESSFUL")
+        assertThat(projectDir.resolve("catalog/build/version-catalog/libs.versions.toml")).exists()
+        val toml = projectDir.resolve("catalog/build/version-catalog/libs.versions.toml").readText()
+
+        assertThat(toml).contains("""ronin = "1.0.0-SNAPSHOT"""")
+        assertThat(toml).doesNotContain("""jackson = "2.15.2"""")
+        assertThat(toml).doesNotContain("""kotlin = "1.8.22"""")
+
+        assertThat(toml).contains("""middle = {group = "com.projectronin.plugins", name = "middle", version.ref = "ronin" }""")
+        assertThat(toml).contains("""project1 = {group = "com.projectronin.plugins", name = "subproject-01", version.ref = "ronin" }""")
+        assertThat(toml).contains("""subproject-03 = {group = "com.projectronin.plugins", name = "subproject-03", version.ref = "ronin" }""")
+        assertThat(toml).doesNotContain("""jackson-annotations = {group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "jackson" }""")
+
+        assertThat(toml).contains("""hi = {id = "com.projectronin.test.hello-jim", version.ref = "ronin" }""")
+        assertThat(toml).contains("""test-hello-world = {id = "com.projectronin.test.hello-world", version.ref = "ronin" }""")
+        assertThat(toml).doesNotContain("""spring-kotlin-core = {id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }""")
     }
 
     @Test

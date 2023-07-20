@@ -24,29 +24,53 @@ class CatalogConventionsPlugin : Plugin<Project> {
 
         meaningfulSubProjects.forEach { target.evaluationDependsOn(it.path) }
 
-        target.extensions.getByType(CatalogPluginExtension::class.java).apply {
-            versionCatalog { builder ->
-                builder.apply {
-                    if (target.rootProject.projectDir.resolve("gradle/libs.versions.toml").exists()) {
-                        from(target.files("${target.rootProject.projectDir}/gradle/libs.versions.toml"))
+        target.extensions.create("roninCatalog", RoninCatalogExtension::class.java).apply {
+            includePrefix.convention(true)
+            prefix.convention(target.rootProject.name)
+            pluginNameMap.convention(emptyMap())
+            libraryNameMap.convention(emptyMap())
+            includeCatalogFile.convention(true)
+            catalogFileToInclude.convention("gradle/libs.versions.toml")
+        }
+
+        target.afterEvaluate {
+            target.extensions.getByType(CatalogPluginExtension::class.java).apply {
+                versionCatalog { builder ->
+                    builder.apply {
+                        val roninCatalog = target.extensions.getByType(RoninCatalogExtension::class.java)
+
+                        if (roninCatalog.includeCatalogFile.get()) {
+                            if (target.rootProject.projectDir.resolve(roninCatalog.catalogFileToInclude.get()).exists()) {
+                                from(target.files("${target.rootProject.projectDir}/${roninCatalog.catalogFileToInclude.get()}"))
+                            } else {
+                                target.logger.warn("Could not find file to include: ${target.rootProject.projectDir}/${roninCatalog.catalogFileToInclude.get()}")
+                            }
+                        }
+
+                        // This whole mess tries to supplement the TOML file by adding _this project's_ version to it dynamically,
+                        // and by recursing the project structure and declaring libraries for each module.
+                        val sanitizedRootName = if (roninCatalog.includePrefix.get()) {
+                            "${roninCatalog.prefix.get().sanitizeName()}-"
+                        } else {
+                            ""
+                        }
+                        val versionRef = roninCatalog.prefix.get().sanitizeName()
+                        version(versionRef, target.version.toString())
+
+                        val gradlePluginSubprojects =
+                            meaningfulSubProjects.filter {
+                                it.extensions.findByName("gradlePlugin") != null
+                            }
+                        val librarySubprojects = meaningfulSubProjects - gradlePluginSubprojects
+
+                        gradlePluginSubprojects
+                            .forEach { extractPlugins(sanitizedRootName, versionRef, it, roninCatalog) }
+                        librarySubprojects
+                            .forEach {
+                                val name = roninCatalog.libraryNameMap.get()[it.path] ?: "$sanitizedRootName${it.name.sanitizeName()}"
+                                library(name, it.group.toString(), it.name).versionRef(versionRef)
+                            }
                     }
-                    // This whole mess tries to supplement the TOML file by adding _this project's_ version to it dynamically,
-                    // and by recursing the project structure and declaring libraries for each module.
-                    val sanitizedRootName = target.rootProject.name.sanitizeName()
-                    version(sanitizedRootName, target.version.toString())
-
-                    val gradlePluginSubprojects =
-                        meaningfulSubProjects.filter {
-                            it.extensions.findByName("gradlePlugin") != null
-                        }
-                    val librarySubprojects = meaningfulSubProjects - gradlePluginSubprojects
-
-                    gradlePluginSubprojects
-                        .forEach { extractPlugins(sanitizedRootName, it) }
-                    librarySubprojects
-                        .forEach {
-                            library("$sanitizedRootName-${it.name.sanitizeName()}", it.group.toString(), it.name).versionRef(sanitizedRootName)
-                        }
                 }
             }
         }
@@ -60,14 +84,14 @@ class CatalogConventionsPlugin : Plugin<Project> {
         }
     }
 
-    private fun VersionCatalogBuilder.extractPlugins(sanitizedRootName: String, currentProject: Project) {
+    private fun VersionCatalogBuilder.extractPlugins(sanitizedRootName: String, versionRef: String, currentProject: Project, roninCatalog: RoninCatalogExtension) {
         (currentProject.extensions.findByType(GradlePluginDevelopmentExtension::class.java)?.plugins?.toList() ?: emptyList())
             .forEach { plugin ->
                 val pluginId = plugin.id
-                val catalogName = pluginId.replace("com.projectronin.", "").sanitizeName()
-                plugin("$sanitizedRootName-$catalogName", pluginId).versionRef(sanitizedRootName)
+                val catalogName = roninCatalog.pluginNameMap.get()[pluginId] ?: "$sanitizedRootName${pluginId.replace("com.projectronin.", "").sanitizeName()}"
+                plugin(catalogName, pluginId).versionRef(versionRef)
             }
     }
 
-    private fun String.sanitizeName(): String = replace("[^a-zA-Z]+".toRegex(), "-")
+    private fun String.sanitizeName(): String = replace("[^a-zA-Z0-9]+".toRegex(), "-")
 }

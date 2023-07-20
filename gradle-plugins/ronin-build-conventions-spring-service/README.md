@@ -17,7 +17,7 @@ In build.gradle.kts, assuming your project follows the instructions in [README.m
 
 ```kotlin
 plugins {
-    alias(roningradle.plugins.ronin.gradle.buildconventions.spring.servicve)
+    alias(roningradle.plugins.buildconventions.spring.servicve)
 }
 ```
 

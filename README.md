@@ -46,7 +46,7 @@ build.gradle.kts:
 ```kotlin
 plugins {
     // alias(roningradle.plugins.<plugin.name>), e.g:
-    alias(roningradle.plugins.ronin.gradle.json.contract)
+    alias(roningradle.plugins.json.contract)
 }
 ```
 

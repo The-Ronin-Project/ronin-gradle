@@ -17,7 +17,7 @@ In build.gradle.kts, assuming your project follows the instructions in [README.m
 
 ```kotlin
 plugins {
-    alias(roningradle.plugins.ronin.gradle.buildconventions.kotlin.jvm)
+    alias(roningradle.plugins.buildconventions.kotlin.jvm)
 }
 ```
 

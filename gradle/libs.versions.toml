@@ -1,21 +1,34 @@
 [versions]
-kotlin = "1.8.22"
-detekt = "1.23.0"
-kover = "0.6.1"
-swaggerparser = "2.1.11"
-fabrikt = "10.0.0"
-springboot = "3.0.6"
-springdependencymanager = "1.1.0"
-ktlint = "11.5.0"
-sonarqube = "4.2.1.3168"
-dokka = "1.8.20"
-jackson = "2.15.2"
-testcontainers = "1.17.6"
+assertj="3.23.1"
 axion = "1.15.3"
+commonscodec="1.16.0"
+commonsio="2.11.0"
+detekt = "1.23.0"
+dokka = "1.8.20"
+fabrikt = "10.0.0"
+gradle = "8.2"
+jackson = "2.15.2"
+jakartavalidation="3.0.2"
 jsonschematopojo = "1.2.1"
-node = "3.5.0"
-releasehub = "4.0.0"
+junit="5.9.3"
+kotlin = "1.8.22"
 kotlindsl = "4.0.14"
+kotlinlogging="3.0.5"
+kover = "0.6.1"
+ktlint = "11.5.0"
+mockk="1.13.5"
+node = "3.5.0"
+okhttp="4.10.0"
+openapigenerator="6.4.0"
+releasehub = "4.0.0"
+schemavalidator="1.0.85"
+semver="4.3.0"
+sonarqube = "4.2.1.3168"
+springboot = "3.0.7"
+springdependencymanager = "1.1.0"
+swaggercore="2.2.15"
+swaggerparser = "2.1.16"
+testcontainers = "1.17.6"
 
 [libraries]
 gradle-kotlin-jvm = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -31,11 +44,11 @@ gradle-spring-kotlin-jpa = { module = "org.jetbrains.kotlin:kotlin-noarg", versi
 gradle-axion-release = { module = "pl.allegro.tech.build:axion-release-plugin", version.ref = "axion" }
 gradle-jsonschematopojo = { module = "org.jsonschema2pojo:jsonschema2pojo-gradle-plugin", version.ref = "jsonschematopojo" }
 gradle-node = { module = "com.github.node-gradle:gradle-node-plugin", version.ref = "node" }
-gradle-openapi-generator = "org.openapitools:openapi-generator-gradle-plugin:6.4.0"
+gradle-openapi-generator = { module = "org.openapitools:openapi-generator-gradle-plugin", version.ref = "openapigenerator" }
 gradle-releasehub = { module = "com.dipien:releases-hub-gradle-plugin", version.ref = "releasehub" }
 gradle-kotlin-dsl = { module = "org.gradle.kotlin:gradle-kotlin-dsl-plugins", version.ref = "kotlindsl" }
 
-gradle-api = { module = "dev.gradleplugins:gradle-api", version = "8.2" }
+gradle-api = { module = "dev.gradleplugins:gradle-api", version.ref = "gradle" }
 
 spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "springboot" }
 spring-boot-test = { module = "org.springframework.boot:spring-boot-starter-test" }
@@ -44,27 +57,27 @@ spring-boot-annotation-processor = { module = "org.springframework.boot:spring-b
 liquibase-core = { module = "org.liquibase:liquibase-core" }
 mysql-connector = { module = "com.mysql:mysql-connector-j" }
 
-commons-io = "commons-io:commons-io:2.11.0"
+commons-io = { module = "commons-io:commons-io", version.ref = "commonsio" }
 kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
-kotlin-logging = "io.github.microutils:kotlin-logging-jvm:3.0.5"
-swagger-core = "io.swagger.core.v3:swagger-core:2.2.15"
-swagger-parser = "io.swagger.parser.v3:swagger-parser:2.1.16"
-commons-codec = "commons-codec:commons-codec:1.16.0"
-semver = "org.semver4j:semver4j:4.3.0"
+kotlin-logging = { module = "io.github.microutils:kotlin-logging-jvm", version.ref = "kotlinlogging" }
+swagger-core = { module = "io.swagger.core.v3:swagger-core", version.ref = "swaggercore" }
+swagger-parser = { module = "io.swagger.parser.v3:swagger-parser", version.ref = "swaggerparser" }
+commons-codec = { module = "commons-codec:commons-codec", version.ref = "commonscodec" }
+semver = { module = "org.semver4j:semver4j", version.ref = "semver" }
 jgit = "org.eclipse.jgit:org.eclipse.jgit:6.5.0.202303070854-r"
-json-schema-validator = "com.networknt:json-schema-validator:1.0.85"
-junit-jupiter = "org.junit.jupiter:junit-jupiter:5.9.3"
-mockk = "io.mockk:mockk:1.13.5"
-assertj = "org.assertj:assertj-core:3.23.1"
+json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "schemavalidator" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 testcontainers-mysql = { module = "org.testcontainers:mysql", version.ref = "testcontainers" }
-okhttp = "com.squareup.okhttp3:okhttp:4.10.0"
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 swaggerparser = { module = "io.swagger.parser.v3:swagger-parser", version.ref = "swaggerparser" }
 fabrikt = { module = "com.cjbooms:fabrikt", version.ref = "fabrikt" }
 jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
-jakarta-validation-api = "jakarta.validation:jakarta.validation-api:3.0.2"
+jakarta-validation-api = { module = "jakarta.validation:jakarta.validation-api", version.ref = "jakartavalidation" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

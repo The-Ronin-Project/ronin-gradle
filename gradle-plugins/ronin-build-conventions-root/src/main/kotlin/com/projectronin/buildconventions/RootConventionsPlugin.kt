@@ -1,6 +1,7 @@
 package com.projectronin.buildconventions
 
 import com.projectronin.gradle.helpers.BaseGradlePluginIdentifiers
+import com.projectronin.gradle.helpers.addDependentTaskByName
 import com.projectronin.gradle.helpers.applyPlugin
 import com.projectronin.gradle.helpers.projectDependency
 import com.projectronin.roninbuildconventionsroot.DependencyHelper
@@ -29,12 +30,30 @@ class RootConventionsPlugin : Plugin<Project> {
             target.projectDependency("jacocoAggregation", ":${subProject.path}")
         }
 
-        target.extensions.getByType(SonarExtension::class.java).apply {
-            properties {
-                it.property("sonar.projectKey", target.name)
-                it.property("sonar.projectName", target.name)
-                it.property("sonar.coverage.exclusions", "**/test/**,**/generated-sources/**,**/generated/sources/**,**/*.kts,**/kotlin/dsl/accessors/**,**/kotlin/test/**")
-                it.property("sonar.coverage.jacoco.xmlReportPaths", target.layout.buildDirectory.file("reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml").get())
+        target.extensions.create("roninSonar", RoninSonarConfig::class.java).apply {
+            projectKey.convention(target.name)
+            projectName.convention(target.name)
+            coverageExclusions.convention(
+                listOf(
+                    "**/test/**",
+                    "**/test-utilities/**",
+                    "**/*.kts",
+                    "**/kotlin/dsl/accessors/**",
+                    "**/kotlin/test/**"
+                )
+            )
+            xmlReportPath.convention("reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml")
+        }
+
+        target.afterEvaluate {
+            val roninSonarConfig = target.extensions.getByType(RoninSonarConfig::class.java)
+            target.extensions.getByType(SonarExtension::class.java).apply {
+                properties {
+                    it.property("sonar.projectKey", roninSonarConfig.projectKey.get())
+                    it.property("sonar.projectName", roninSonarConfig.projectName.get())
+                    it.property("sonar.coverage.exclusions", roninSonarConfig.coverageExclusions.get())
+                    it.property("sonar.coverage.jacoco.xmlReportPaths", target.layout.buildDirectory.file(roninSonarConfig.xmlReportPath.get()).get())
+                }
             }
         }
 
@@ -42,25 +61,28 @@ class RootConventionsPlugin : Plugin<Project> {
         target.extensions.getByType(ReportingExtension::class.java).apply {
             reports.apply {
                 create("testCodeCoverageReport", JacocoCoverageReport::class.java).apply {
-                    testType.set(TestSuiteType.UNIT_TEST)
                     reportTask.get().apply {
                         executionData.setFrom(
                             meaningfulSubProjects.map { subproject ->
                                 subproject.fileTree(subproject.buildDir).include("/jacoco/*.exec")
                             }
                         )
-                        dependsOn(*meaningfulSubProjects.mapNotNull { p -> p.tasks.findByName("jacocoTestReport") }.toTypedArray())
                         classDirectories.setFrom(
                             meaningfulSubProjects.map { subproject ->
                                 subproject.fileTree(subproject.buildDir.resolve("classes")).exclude("**/kotlin/dsl/accessors/**", "**/kotlin/test/**")
                             }
                         )
                     }
+                    testType.set(TestSuiteType.UNIT_TEST)
                 }
             }
         }
 
-        target.tasks.getByName("testCodeCoverageReport").dependsOn(*meaningfulSubProjects.mapNotNull { p -> p.tasks.findByName("jacocoTestReport") }.toTypedArray())
+        target.tasks.getByName("testCodeCoverageReport") { testCodeCoverageReport ->
+            meaningfulSubProjects.forEach { subProject ->
+                testCodeCoverageReport.addDependentTaskByName("jacocoTestReport", subProject)
+            }
+        }
         target.tasks.getByName("sonar").dependsOn("testCodeCoverageReport")
 
         target.subprojects.forEach { subProject ->

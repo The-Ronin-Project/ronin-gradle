@@ -9,12 +9,12 @@ plugins {
     base
 }
 
-fun VersionCatalogBuilder.extractPlugins(sanitizedRootName: String, currentProject: Project) {
+fun VersionCatalogBuilder.extractPlugins(versionRef: String, currentProject: Project) {
     (currentProject.extensions.findByType(GradlePluginDevelopmentExtension::class.java)?.plugins?.toList() ?: emptyList())
         .forEach { plugin ->
             val pluginId = plugin.id
             val catalogName = pluginId.replace("com.projectronin.", "").sanitizeName()
-            plugin("$sanitizedRootName-$catalogName", pluginId).versionRef(sanitizedRootName)
+            plugin(catalogName, pluginId).versionRef(versionRef)
         }
 }
 
@@ -22,7 +22,6 @@ fun String.sanitizeName(): String = replace("[^a-zA-z]+".toRegex(), "-")
 
 catalog {
     versionCatalog {
-        from(files("${rootProject.projectDir}/gradle/libs.versions.toml"))
         // This whole mess tries to supplement the TOML file by adding _this project's_ version to it dynamically,
         // and by recursing the project structure and declaring libraries for each module.
         version("ronin-gradle", project.version.toString())
@@ -34,7 +33,7 @@ catalog {
             .forEach { extractPlugins("ronin-gradle", it) }
         librarySubprojects
             .forEach {
-                library("ronin-gradle-${it.name}", it.group.toString(), it.name).versionRef("ronin-gradle")
+                library(it.name, it.group.toString(), it.name).versionRef("ronin-gradle")
             }
     }
 }

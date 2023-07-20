@@ -1,5 +1,10 @@
 dependencies {
     compileOnly(libs.gradle.api)
+
+    testImplementation(libs.junit.jupiter)
+    testImplementation(libs.assertj)
+    testImplementation(libs.mockk)
+    testImplementation(libs.gradle.api)
 }
 
 publishing {

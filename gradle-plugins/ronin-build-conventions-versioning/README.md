@@ -16,7 +16,7 @@ In the root build.gradle.kts, assuming your project follows the instructions in 
 
 ```kotlin
 plugins {
-    alias(roningradle.plugins.ronin.gradle.buildconventions.versioning)
+    alias(roningradle.plugins.buildconventions.versioning)
 }
 ```
 
