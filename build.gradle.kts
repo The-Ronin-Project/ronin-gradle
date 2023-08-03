@@ -114,11 +114,20 @@ mainProjects.forEach { subProject ->
             events(org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED)
             exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
         }
+        doLast {
+            val ft: ConfigurableFileTree = fileTree(subProject.buildDir).include("/jacoco/*.exec") as ConfigurableFileTree
+            if (!ft.isEmpty) {
+                while (ft.minOf { file -> System.currentTimeMillis() - file.lastModified() } < 1000) {
+                    logger.debug("${subProject.name}:$name: waiting for .exec files to mature")
+                    Thread.sleep(100)
+                }
+            }
+        }
     }
 
     subProject.tasks.withType<JacocoReport> {
-        executionData.setFrom(fileTree(buildDir).include("/jacoco/*.exec"))
-        dependsOn(*subProject.tasks.withType<Test>().toTypedArray())
+        executionData.setFrom(fileTree(subProject.buildDir).include("/jacoco/*.exec"))
+        addDependentTaskByType(Test::class.java, subProject)
     }
 
     subProject.extensions.getByType(KtlintExtension::class).apply {
@@ -187,7 +196,9 @@ reporting {
                         fileTree(subproject.buildDir).include("/jacoco/*.exec")
                     }
                 )
-                dependsOn(*subprojects.mapNotNull { p -> p.tasks.findByName("jacocoTestReport") }.toTypedArray())
+                subprojects.forEach { subProject ->
+                    addDependentTaskByType(Test::class.java, subProject)
+                }
                 classDirectories.setFrom(
                     subprojects.map { subproject ->
                         fileTree(subproject.buildDir.resolve("classes")).exclude("**/kotlin/dsl/accessors/**")
@@ -198,5 +209,39 @@ reporting {
     }
 }
 
-tasks.getByName("testCodeCoverageReport").dependsOn(*subprojects.mapNotNull { p -> p.tasks.findByName("jacocoTestReport") }.toTypedArray())
+tasks.getByName("testCodeCoverageReport") {
+    subprojects.forEach { subProject ->
+        addDependentTaskByType(Test::class.java, subProject)
+    }
+}
 tasks.getByName("sonar").dependsOn("testCodeCoverageReport")
+
+fun Task.addDependentTaskByName(nameToAdd: String, targetProject: Project) {
+    when (val targetProjectTask = targetProject.tasks.findByName(nameToAdd)) {
+        null -> targetProject.tasks.whenTaskAdded {
+            if (this.name == nameToAdd && this@addDependentTaskByName != this) {
+                targetProject.logger.debug("Lazy adding ${this.name} to ${targetProject.path}:${this@addDependentTaskByName.name}")
+                this@addDependentTaskByName.dependsOn(this)
+            }
+        }
+
+        else -> {
+            targetProject.logger.debug("Initially adding ${targetProjectTask.name} to ${targetProject.path}:$name")
+            dependsOn(targetProjectTask)
+        }
+    }
+}
+
+fun Task.addDependentTaskByType(taskType: Class<out Task>, targetProject: Project) {
+    val initialTasks = targetProject.tasks.withType(taskType)
+    if (initialTasks.isNotEmpty()) {
+        targetProject.logger.debug("Initially adding ${initialTasks.joinToString { it.name }} to ${targetProject.path}:$name")
+        dependsOn(*initialTasks.toTypedArray())
+    }
+    targetProject.tasks.whenTaskAdded {
+        if (taskType.isAssignableFrom(this.javaClass) && this@addDependentTaskByType != this) {
+            targetProject.logger.debug("Lazy adding ${this.name} to ${targetProject.path}:${this@addDependentTaskByType.name}")
+            this@addDependentTaskByType.dependsOn(this)
+        }
+    }
+}

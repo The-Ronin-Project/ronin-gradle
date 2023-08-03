@@ -1,7 +1,7 @@
 package com.projectronin.buildconventions
 
 import com.projectronin.gradle.helpers.BaseGradlePluginIdentifiers
-import com.projectronin.gradle.helpers.addDependentTaskByName
+import com.projectronin.gradle.helpers.addDependentTaskByType
 import com.projectronin.gradle.helpers.applyPlugin
 import com.projectronin.gradle.helpers.projectDependency
 import com.projectronin.roninbuildconventionsroot.DependencyHelper
@@ -9,6 +9,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.attributes.TestSuiteType
 import org.gradle.api.reporting.ReportingExtension
+import org.gradle.api.tasks.testing.Test
 import org.gradle.testing.jacoco.plugins.JacocoCoverageReport
 import org.sonarqube.gradle.SonarExtension
 
@@ -80,7 +81,7 @@ class RootConventionsPlugin : Plugin<Project> {
 
         target.tasks.getByName("testCodeCoverageReport") { testCodeCoverageReport ->
             meaningfulSubProjects.forEach { subProject ->
-                testCodeCoverageReport.addDependentTaskByName("jacocoTestReport", subProject)
+                testCodeCoverageReport.addDependentTaskByType(Test::class.java, subProject)
             }
         }
         target.tasks.getByName("sonar").dependsOn("testCodeCoverageReport")

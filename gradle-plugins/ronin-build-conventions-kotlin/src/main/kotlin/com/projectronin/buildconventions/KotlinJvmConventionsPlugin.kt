@@ -6,9 +6,12 @@ import com.projectronin.gradle.helpers.applyPlugin
 import com.projectronin.gradle.helpers.testImplementationDependency
 import com.projectronin.roninbuildconventionskotlin.DependencyHelper
 import org.eclipse.jgit.api.Git
+import org.gradle.api.Action
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.Task
+import org.gradle.api.file.ConfigurableFileTree
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
@@ -49,6 +52,17 @@ class KotlinJvmConventionsPlugin : Plugin<Project> {
                             container.events(TestLogEvent.FAILED)
                             container.exceptionFormat = TestExceptionFormat.FULL
                         }
+                        task.doLast(object : Action<Task> {
+                            override fun execute(t: Task) {
+                                val ft: ConfigurableFileTree = fileTree(target.buildDir).include("/jacoco/*.exec") as ConfigurableFileTree
+                                if (!ft.isEmpty) {
+                                    while (ft.minOf { file -> System.currentTimeMillis() - file.lastModified() } < 1000) {
+                                        logger.debug("${target.name}:$name: waiting for .exec files to mature")
+                                        Thread.sleep(100)
+                                    }
+                                }
+                            }
+                        })
                     }
 
                     withType(JacocoReport::class.java) { task ->
