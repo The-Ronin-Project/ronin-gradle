@@ -10,6 +10,7 @@ import com.cjbooms.fabrikt.cli.ValidationLibrary
 import com.cjbooms.fabrikt.configurations.Packages
 import com.cjbooms.fabrikt.generators.MutableSettings
 import com.cjbooms.fabrikt.model.SourceApi
+import com.projectronin.gradle.helpers.addTaskThatDependsOnThisByName
 import com.projectronin.gradle.helpers.implementationDependency
 import com.projectronin.roninopenapiplugin.DependencyHelper
 import io.swagger.parser.OpenAPIParser
@@ -262,7 +263,7 @@ class OpenApiKotlinGenerator : Plugin<Project> {
         (project.properties["sourceSets"] as SourceSetContainer?)?.getByName("main")?.java?.srcDir(ex.outputDir)
         (project.properties["sourceSets"] as SourceSetContainer?)?.getByName("main")?.resources?.srcDir(ex.resourcesOutputDirectory)
 
-        project.tasks.register(
+        val generatorTask = project.tasks.register(
             "generateOpenApiCode",
             OpenApiKotlinGeneratorTask::class.java
         ) {
@@ -276,22 +277,11 @@ class OpenApiKotlinGenerator : Plugin<Project> {
             it.clientOptions.set(ex.clientOptions)
             it.modelOptions.set(ex.modelOptions)
             it.controllerOptions.set(ex.controllerOptions)
-        }
-
-        project.tasks.findByName("compileKotlin")?.apply {
-            dependsOn("generateOpenApiCode")
-        }
-
-        project.tasks.findByName("processResources")?.apply {
-            dependsOn("generateOpenApiCode")
-        }
-
-        project.tasks.findByName("runKtlintCheckOverMainSourceSet")?.apply {
-            dependsOn("generateOpenApiCode")
-        }
-
-        project.tasks.findByName("sourcesJar")?.apply {
-            dependsOn("generateOpenApiCode")
-        }
+        }.get()
+        generatorTask.addTaskThatDependsOnThisByName("compileKotlin")
+        generatorTask.addTaskThatDependsOnThisByName("processResources")
+        generatorTask.addTaskThatDependsOnThisByName("runKtlintCheckOverMainSourceSet")
+        generatorTask.addTaskThatDependsOnThisByName("sourcesJar")
+        generatorTask.addTaskThatDependsOnThisByName("kaptGenerateStubsKotlin")
     }
 }

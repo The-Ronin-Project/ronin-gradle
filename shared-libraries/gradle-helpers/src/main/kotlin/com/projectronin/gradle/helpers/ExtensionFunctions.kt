@@ -105,7 +105,10 @@ fun Project.registerMavenRepository(registerDefaultJavaPublication: Boolean = fa
     }
 }
 
-fun Task.addDependentTaskByName(nameToAdd: String, targetProject: Project = this.project) {
+/**
+ * This one makes _this task_ dependent on the task identified by name.
+ */
+fun Task.dependsOnTaskByName(nameToAdd: String, targetProject: Project = this.project) {
     when (val targetProjectTask = targetProject.tasks.findByName(nameToAdd)) {
         null -> targetProject.tasks.whenTaskAdded { addedTask ->
             if (addedTask.name == nameToAdd && this != addedTask) {
@@ -121,7 +124,10 @@ fun Task.addDependentTaskByName(nameToAdd: String, targetProject: Project = this
     }
 }
 
-fun Task.addDependentTaskByType(taskType: Class<out Task>, targetProject: Project = this.project) {
+/**
+ * This one makes _this task_ dependent on the task identified by type
+ */
+fun Task.dependsOnTasksByType(taskType: Class<out Task>, targetProject: Project = this.project) {
     val initialTasks = targetProject.tasks.withType(taskType)
     if (initialTasks.isNotEmpty()) {
         targetProject.logger.debug("Initially adding ${initialTasks.joinToString { it.name }} to ${targetProject.path}:$name")
@@ -131,6 +137,25 @@ fun Task.addDependentTaskByType(taskType: Class<out Task>, targetProject: Projec
         if (taskType.isAssignableFrom(addedTask.javaClass) && this != addedTask) {
             targetProject.logger.debug("Lazy adding ${addedTask.name} to ${targetProject.path}:$name")
             dependsOn(addedTask)
+        }
+    }
+}
+
+/**
+ * This one makes the task identified by name dependent on _this task_.
+ */
+fun Task.addTaskThatDependsOnThisByName(nameToAdd: String, targetProject: Project = this.project) {
+    when (val targetProjectTask = targetProject.tasks.findByName(nameToAdd)) {
+        null -> targetProject.tasks.whenTaskAdded { addedTask ->
+            if (addedTask.name == nameToAdd && this != addedTask) {
+                targetProject.logger.debug("Lazy adding ${addedTask.name} to ${targetProject.path}:$name")
+                addedTask.dependsOn(this)
+            }
+        }
+
+        else -> {
+            targetProject.logger.debug("Initially adding ${targetProjectTask.name} to ${targetProject.path}:$name")
+            targetProjectTask.dependsOn(this)
         }
     }
 }

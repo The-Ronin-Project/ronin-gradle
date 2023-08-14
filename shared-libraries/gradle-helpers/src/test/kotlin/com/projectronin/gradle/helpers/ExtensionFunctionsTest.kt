@@ -35,7 +35,7 @@ class ExtensionFunctionsTest {
         every { task.project } returns project
         every { task.name } returns "owner"
 
-        task.addDependentTaskByName("foo")
+        task.dependsOnTaskByName("foo")
 
         verify(exactly = 1) { task.dependsOn(fooTask) }
     }
@@ -64,7 +64,7 @@ class ExtensionFunctionsTest {
 
         every { fooTask.name } returns "foo"
 
-        task.addDependentTaskByName("foo")
+        task.dependsOnTaskByName("foo")
 
         verify(exactly = 0) { task.dependsOn(*anyVararg()) }
 
@@ -110,7 +110,7 @@ class ExtensionFunctionsTest {
         every { taskCollection.iterator() } returns mutableListOf(fooTask).listIterator()
         every { taskCollection.toTypedArray() } returns arrayOf(fooTask)
 
-        task.addDependentTaskByType(FooTask::class.java)
+        task.dependsOnTasksByType(FooTask::class.java)
 
         verify(exactly = 1) { task.dependsOn(fooTask) }
     }
@@ -143,7 +143,7 @@ class ExtensionFunctionsTest {
 
         every { taskCollection.isEmpty() } returns true
 
-        task.addDependentTaskByType(FooTask::class.java)
+        task.dependsOnTasksByType(FooTask::class.java)
 
         verify(exactly = 0) { task.dependsOn(*anyVararg()) }
 

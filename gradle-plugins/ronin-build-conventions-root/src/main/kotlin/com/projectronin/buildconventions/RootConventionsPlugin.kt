@@ -1,8 +1,8 @@
 package com.projectronin.buildconventions
 
 import com.projectronin.gradle.helpers.BaseGradlePluginIdentifiers
-import com.projectronin.gradle.helpers.addDependentTaskByType
 import com.projectronin.gradle.helpers.applyPlugin
+import com.projectronin.gradle.helpers.dependsOnTasksByType
 import com.projectronin.gradle.helpers.projectDependency
 import com.projectronin.roninbuildconventionsroot.DependencyHelper
 import org.gradle.api.Plugin
@@ -81,7 +81,7 @@ class RootConventionsPlugin : Plugin<Project> {
 
         target.tasks.getByName("testCodeCoverageReport") { testCodeCoverageReport ->
             meaningfulSubProjects.forEach { subProject ->
-                testCodeCoverageReport.addDependentTaskByType(Test::class.java, subProject)
+                testCodeCoverageReport.dependsOnTasksByType(Test::class.java, subProject)
             }
         }
         target.tasks.getByName("sonar").dependsOn("testCodeCoverageReport")

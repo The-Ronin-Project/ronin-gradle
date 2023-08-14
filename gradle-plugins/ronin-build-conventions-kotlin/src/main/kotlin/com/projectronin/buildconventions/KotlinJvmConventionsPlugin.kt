@@ -1,8 +1,8 @@
 package com.projectronin.buildconventions
 
 import com.projectronin.gradle.helpers.BaseGradlePluginIdentifiers
-import com.projectronin.gradle.helpers.addDependentTaskByType
 import com.projectronin.gradle.helpers.applyPlugin
+import com.projectronin.gradle.helpers.dependsOnTasksByType
 import com.projectronin.gradle.helpers.testImplementationDependency
 import com.projectronin.roninbuildconventionskotlin.DependencyHelper
 import org.eclipse.jgit.api.Git
@@ -67,7 +67,7 @@ class KotlinJvmConventionsPlugin : Plugin<Project> {
 
                     withType(JacocoReport::class.java) { task ->
                         task.executionData.setFrom(fileTree(buildDir).include("/jacoco/*.exec"))
-                        task.addDependentTaskByType(Test::class.java)
+                        task.dependsOnTasksByType(Test::class.java)
                         task.classDirectories.setFrom(
                             target.fileTree(target.buildDir.resolve("classes")).exclude("**/kotlin/dsl/accessors/**", "**/kotlin/test/**")
                         )
