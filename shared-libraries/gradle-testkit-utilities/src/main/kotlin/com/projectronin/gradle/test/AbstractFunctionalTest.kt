@@ -108,7 +108,7 @@ abstract class AbstractFunctionalTest {
         projectSetup: ProjectSetup = ProjectSetup(),
         extraStuffToDo: (Git) -> Unit = { defaultExtraStuffToDo(it) }
     ): BuildResult {
-        val git = Git.init().setDirectory(this.projectDir).call()
+        val git = Git.init().setDirectory(this.projectDir).setInitialBranch("main").call()
         File(this.projectDir, ".gitignore").writeText(
             """
             docs/

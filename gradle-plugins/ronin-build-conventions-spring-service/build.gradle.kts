@@ -5,6 +5,7 @@ dependencies {
     api(libs.gradle.spring.kotlin.core)
     api(libs.gradle.spring.kotlin.jpa)
     implementation(project(":shared-libraries:gradle-helpers"))
+    implementation(libs.jgit)
 
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.assertj)
