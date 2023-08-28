@@ -151,7 +151,7 @@ paths:
           name: assignmentId
           required: true
           schema:
-            $ref: schemas/simple-types.yml#/components/schemas/QuestionnaireAssignmentId
+            $ref: .dependencies/contract-rest-clinical-data/contract-rest-clinical-data.json#/components/schemas/CreatePatientRequestBody
           description: The assignment ID that the answers are being submitted for
         - in: header
           name: If-Match

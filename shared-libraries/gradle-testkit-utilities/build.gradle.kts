@@ -9,6 +9,7 @@ dependencies {
     api(libs.okhttp)
     api(libs.jackson.databind)
     api(libs.assertj)
+    api(libs.commons.compress)
 }
 
 publishing {

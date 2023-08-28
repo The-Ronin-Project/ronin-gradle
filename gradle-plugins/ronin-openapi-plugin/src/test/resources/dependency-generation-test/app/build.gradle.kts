@@ -81,4 +81,5 @@ configure<OpenApiKotlinGeneratorExtension> {
             finalResourcePath.set("v1/questionnaire.json")
         }
     )
+    controllerOptions.add("SUSPEND_MODIFIER")
 }

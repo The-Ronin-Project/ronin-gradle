@@ -1,8 +1,7 @@
 dependencies {
     implementation(libs.gradle.kotlin.jvm)
-    implementation(libs.swaggerparser)
-    implementation(libs.fabrikt)
     implementation(project(":shared-libraries:gradle-helpers"))
+    implementation(project(":shared-libraries:openapi-processor"))
 
     testImplementation(libs.assertj)
     testImplementation(libs.junit.jupiter)
@@ -22,8 +21,6 @@ gradlePlugin {
 dependencyHelper {
     helperDependencies.set(
         mapOf(
-            "fabrikt" to libs.fabrikt,
-            "swaggerParser" to libs.swaggerparser,
             "jakarta" to libs.jakarta.validation.api
         )
     )

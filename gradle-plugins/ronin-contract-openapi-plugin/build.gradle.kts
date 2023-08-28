@@ -14,6 +14,9 @@ dependencies {
         exclude(group = "org.slf4j", module = "slf4j-simple")
     }
     implementation(project(":shared-libraries:gradle-helpers"))
+    implementation(project(":shared-libraries:openapi-processor"))
+    implementation(project(":gradle-plugins:ronin-build-conventions-versioning"))
+    implementation(project(":gradle-plugins:ronin-build-conventions-kotlin"))
 
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.assertj)
@@ -35,6 +38,15 @@ dependencyHelper {
     helperPlugins.set(
         mapOf(
             "node" to libs.plugins.node
+        )
+    )
+    helperDependencies.set(
+        mapOf(
+            "jakarta" to libs.jakarta.validation.api,
+            "springBom" to libs.spring.boot.bom,
+            "springWeb" to libs.spring.web,
+            "springContext" to libs.spring.context,
+            "jacksonAnnotations" to libs.jackson.annotations
         )
     )
 }

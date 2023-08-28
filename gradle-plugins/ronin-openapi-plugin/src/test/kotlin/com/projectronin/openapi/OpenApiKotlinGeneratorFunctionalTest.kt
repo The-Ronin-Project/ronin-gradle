@@ -55,6 +55,10 @@ class OpenApiKotlinGeneratorFunctionalTest : AbstractFunctionalTest() {
         assertThat(projectDir.resolve("app/build/generated/openapi-kotlin-generator/kotlin/com/projectronin/services/questionnaire/api/v1/models/AbstractQuestionGroup.kt")).exists()
         assertThat(projectDir.resolve("app/build/resources/main/META-INF/resources/v1/questionnaire.json")).exists()
 
+        with(projectDir.resolve("app/build/generated/openapi-kotlin-generator/kotlin/com/projectronin/services/questionnaire/api/v1/controllers/SummaryController.kt").readText()) {
+            assertThat(this).contains("suspend fun getSummary(")
+        }
+
         val entry = ZipFile(projectDir.resolve("app/build/libs/app.jar")).getEntry("META-INF/resources/v1/questionnaire.json")
         assertThat(entry).isNotNull()
         assertThat(entry.compressedSize).isGreaterThan(1000L)

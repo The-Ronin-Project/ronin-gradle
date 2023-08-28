@@ -1,44 +1,42 @@
-package com.projectronin.rest.contract
+package com.projectronin.openapi.shared
 
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.SetProperty
+import org.gradle.workers.WorkParameters
 
-interface RestContractSupportExtension {
-
+/**
+ * Parameters for generating kotlin code from a consolidated specification.
+ */
+interface OpenApiKotlinGeneratorParameters : WorkParameters {
     /**
-     * Disable linting (default false, not recommended to modify)
+     * Input location
      */
-    val disableLinting: Property<Boolean>
+    val consolidatedSpecInputFile: RegularFileProperty
 
     /**
-     * The openapi file to read.  Defaults to src/main/openapi/${project-name}.json
-     */
-    val inputFile: RegularFileProperty
-
-    /**
-     * Package name.  Defaults to com.projectronin.rest.
+     * Package name to output
      */
     val packageName: Property<String>
 
     /**
-     * Should we generate a kotlin client for the API.  Default false.
+     * Should we generate a client
      */
     val generateClient: Property<Boolean>
 
     /**
-     * Should we generate a kotlin model for the API.  Default true
+     * Should we generate models (isn't that the point?)
      */
     val generateModel: Property<Boolean>
 
     /**
-     * Should we generate a kotlin/spring controller for the API.  Default true
+     * Should we generate spring controllers
      */
     val generateController: Property<Boolean>
 
     /**
-     * The output directory to put the kotlin sources in.  Default "generated/sources/openapi"
+     * The output directory to write the generated sources to
      */
     val generatedSourcesOutputDir: DirectoryProperty
 

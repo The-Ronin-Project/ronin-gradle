@@ -1,4 +1,4 @@
-package com.projectronin.rest.contract.util
+package com.projectronin.openapi.shared.util
 
 import com.fasterxml.jackson.core.PrettyPrinter
 import com.fasterxml.jackson.core.util.DefaultIndenter
@@ -8,6 +8,9 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import io.swagger.v3.core.util.Yaml
 
+/**
+ * For reused customized yaml and json writers in the context of writing out consolidated openapi specifications.
+ */
 object WriterFactory {
 
     fun yamlWriter(): ObjectMapper {

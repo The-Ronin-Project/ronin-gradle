@@ -3,6 +3,7 @@ assertj="3.23.1"
 axion = "1.15.3"
 commonscodec="1.16.0"
 commonsio="2.11.0"
+commonscompress="1.23.0"
 detekt = "1.23.0"
 dokka = "1.8.20"
 fabrikt = "10.0.0"
@@ -52,12 +53,15 @@ gradle-api = { module = "dev.gradleplugins:gradle-api", version.ref = "gradle" }
 
 spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "springboot" }
 spring-boot-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-web = { module = "org.springframework:spring-web" }
+spring-context = { module = "org.springframework:spring-context" }
 spring-boot-annotation-processor = { module = "org.springframework.boot:spring-boot-configuration-processor", version.ref = "springboot" }
 
 liquibase-core = { module = "org.liquibase:liquibase-core" }
 mysql-connector = { module = "com.mysql:mysql-connector-j" }
 
 commons-io = { module = "commons-io:commons-io", version.ref = "commonsio" }
+commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonscompress" }
 kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
 kotlin-logging = { module = "io.github.microutils:kotlin-logging-jvm", version.ref = "kotlinlogging" }

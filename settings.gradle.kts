@@ -2,6 +2,7 @@ rootProject.name = "ronin-gradle"
 
 include(":shared-libraries:gradle-testkit-utilities")
 include(":shared-libraries:gradle-helpers")
+include(":shared-libraries:openapi-processor")
 
 include(":gradle-plugins:ronin-contract-json-plugin")
 include(":gradle-plugins:ronin-contract-openapi-plugin")

@@ -1,21 +1,13 @@
 package com.projectronin.openapi
 
-import com.cjbooms.fabrikt.cli.ClientCodeGenOptionType
-import com.cjbooms.fabrikt.cli.CodeGenerationType
-import com.cjbooms.fabrikt.cli.CodeGenerator
-import com.cjbooms.fabrikt.cli.ControllerCodeGenOptionType
-import com.cjbooms.fabrikt.cli.ControllerCodeGenTargetType
-import com.cjbooms.fabrikt.cli.ModelCodeGenOptionType
-import com.cjbooms.fabrikt.cli.ValidationLibrary
-import com.cjbooms.fabrikt.configurations.Packages
-import com.cjbooms.fabrikt.generators.MutableSettings
-import com.cjbooms.fabrikt.model.SourceApi
 import com.projectronin.gradle.helpers.addTaskThatDependsOnThisByName
 import com.projectronin.gradle.helpers.implementationDependency
+import com.projectronin.openapi.shared.OpenApiKotlinConsolidatorParameters
+import com.projectronin.openapi.shared.OpenApiKotlinGeneratorParameters
+import com.projectronin.openapi.shared.consolidateSpec
+import com.projectronin.openapi.shared.createWorkQueueWithDependencies
+import com.projectronin.openapi.shared.generateSources
 import com.projectronin.roninopenapiplugin.DependencyHelper
-import io.swagger.parser.OpenAPIParser
-import io.swagger.v3.core.util.Yaml
-import io.swagger.v3.parser.core.models.ParseOptions
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -33,13 +25,12 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.TaskAction
 import org.gradle.workers.WorkAction
-import org.gradle.workers.WorkParameters
 import org.gradle.workers.WorkQueue
 import org.gradle.workers.WorkerExecutor
 import java.io.File
 import java.net.URI
 import java.net.URL
-import java.nio.file.Path
+import java.util.UUID
 import javax.inject.Inject
 
 interface OpenApiKotlinGeneratorInputSpec {
@@ -70,22 +61,12 @@ interface OpenApiKotlinGeneratorExtension {
     val schemas: ListProperty<OpenApiKotlinGeneratorInputSpec>
     val outputDir: DirectoryProperty
     val resourcesOutputDirectory: DirectoryProperty
-    val controllerOptions: SetProperty<ControllerCodeGenOptionType>
-    val modelOptions: SetProperty<ModelCodeGenOptionType>
-    val clientOptions: SetProperty<ClientCodeGenOptionType>
+    val controllerOptions: SetProperty<String>
+    val modelOptions: SetProperty<String>
+    val clientOptions: SetProperty<String>
 }
 
-interface OpenApiKotlinGeneratorParameters : WorkParameters {
-    val inputUri: Property<URI>
-    val packageName: Property<String>
-    val generateClient: Property<Boolean>
-    val generateModel: Property<Boolean>
-    val generateController: Property<Boolean>
-    val outputDir: DirectoryProperty
-    val controllerOptions: SetProperty<ControllerCodeGenOptionType>
-    val modelOptions: SetProperty<ModelCodeGenOptionType>
-    val clientOptions: SetProperty<ClientCodeGenOptionType>
-}
+interface RoninOpenApiPluginWorkParameters : OpenApiKotlinConsolidatorParameters, OpenApiKotlinGeneratorParameters
 
 abstract class OpenApiKotlinGeneratorTask : DefaultTask() {
 
@@ -99,13 +80,13 @@ abstract class OpenApiKotlinGeneratorTask : DefaultTask() {
     abstract val generateController: Property<Boolean>
 
     @get:Input
-    abstract val controllerOptions: SetProperty<ControllerCodeGenOptionType>
+    abstract val controllerOptions: SetProperty<String>
 
     @get:Input
-    abstract val modelOptions: SetProperty<ModelCodeGenOptionType>
+    abstract val modelOptions: SetProperty<String>
 
     @get:Input
-    abstract val clientOptions: SetProperty<ClientCodeGenOptionType>
+    abstract val clientOptions: SetProperty<String>
 
     @get:Nested
     abstract val schemas: ListProperty<OpenApiKotlinGeneratorInputSpec>
@@ -132,7 +113,7 @@ abstract class OpenApiKotlinGeneratorTask : DefaultTask() {
             }
         }
 
-        val workQueue: WorkQueue = createWorkQueueWithDependencies()
+        val workQueue: WorkQueue = getWorkerExecutor()!!.createWorkQueueWithDependencies(project)
         submitWorkQueueTasks(workQueue)
         workQueue.await()
     }
@@ -158,15 +139,18 @@ abstract class OpenApiKotlinGeneratorTask : DefaultTask() {
             workQueue.submit(
                 GenerateSingleOpenApiSpec::class.java
             ) { parameters ->
-                parameters.inputUri.set(inputUri)
+                parameters.sourceSpecUri.set(inputUri)
+                parameters.consolidatedSpecOutputDirectory.set(resourcesOutputDirectory.get())
+                parameters.specificationName.set(inputUri.toString().toIdentifier())
+                parameters.consolidatedSpecInputFile.set(resourcesOutputDirectory.get().asFile.resolve("${inputUri.toString().toIdentifier()}.yaml"))
                 parameters.packageName.set(input.packageName.get())
                 parameters.generateClient.set(generateClient.getOrElse(false))
                 parameters.generateModel.set(generateModel.getOrElse(true))
                 parameters.generateController.set(generateController.getOrElse(true))
-                parameters.outputDir.set(outputDir)
-                parameters.clientOptions.set(clientOptions)
-                parameters.modelOptions.set(modelOptions)
+                parameters.generatedSourcesOutputDir.set(outputDir)
                 parameters.controllerOptions.set(controllerOptions)
+                parameters.modelOptions.set(modelOptions)
+                parameters.clientOptions.set(clientOptions)
             }
         }
     }
@@ -185,63 +169,12 @@ abstract class OpenApiKotlinGeneratorTask : DefaultTask() {
             dependencyFile.copyTo(resourcesOutputDirectory.get().file(finalResourcePath).asFile, true)
         }
     }
-
-    private fun createWorkQueueWithDependencies(): WorkQueue {
-        val fabriktConfigName = "fabrikt"
-        project.configurations.maybeCreate(fabriktConfigName)
-        project.dependencies.add(fabriktConfigName, DependencyHelper.fabrikt)
-        project.dependencies.add(fabriktConfigName, DependencyHelper.swaggerParser)
-        val fabriktDependencies = project.configurations.getByName(fabriktConfigName).resolve()
-
-        val workQueue: WorkQueue = getWorkerExecutor()!!.classLoaderIsolation { workerSpec -> workerSpec.classpath.from(*fabriktDependencies.toTypedArray()) }
-        return workQueue
-    }
 }
 
-abstract class GenerateSingleOpenApiSpec : WorkAction<OpenApiKotlinGeneratorParameters> {
+abstract class GenerateSingleOpenApiSpec : WorkAction<RoninOpenApiPluginWorkParameters> {
     override fun execute() {
-        val params = parameters
-        val outputPackageName = params.packageName
-        val result = OpenAPIParser().readLocation(
-            params.inputUri.get().toString(),
-            null,
-            ParseOptions().apply {
-                setResolve(true)
-            }
-        )
-
-        val apiContent = Yaml.mapper().writeValueAsString(result.openAPI)
-
-        val codeGenTypes: Set<CodeGenerationType> = setOfNotNull(
-            if (params.generateClient.getOrElse(false)) CodeGenerationType.CLIENT else null,
-            if (params.generateModel.getOrElse(true)) CodeGenerationType.HTTP_MODELS else null,
-            if (params.generateController.getOrElse(true)) CodeGenerationType.CONTROLLERS else null
-        )
-
-        MutableSettings.updateSettings(
-            genTypes = codeGenTypes,
-            controllerOptions = params.controllerOptions.get(),
-            controllerTarget = ControllerCodeGenTargetType.SPRING,
-            modelOptions = params.modelOptions.get(),
-            clientOptions = params.clientOptions.get(),
-            validationLibrary = ValidationLibrary.JAKARTA_VALIDATION
-        )
-
-        val packages = Packages(outputPackageName.get())
-        val sourceApi = SourceApi.create(apiContent, emptyList())
-        val generator = CodeGenerator(packages, sourceApi, Path.of(""), Path.of(""))
-        generator.generate().forEach { it.writeFileTo(params.outputDir.get().asFile) }
-
-        // because the generator hasn't been updated with the javax -> jakarta switch, brute-force that here
-        // this should really be fixed, but there's a bug in there somewhere
-        params.outputDir.get().asFile.walk()
-            .forEach {
-                if (it.name.endsWith(".kt")) {
-                    it.writeText(
-                        it.readText().replace("javax.", "jakarta.")
-                    )
-                }
-            }
+        consolidateSpec(parameters)
+        generateSources(parameters)
     }
 }
 
@@ -284,4 +217,8 @@ class OpenApiKotlinGenerator : Plugin<Project> {
         generatorTask.addTaskThatDependsOnThisByName("sourcesJar")
         generatorTask.addTaskThatDependsOnThisByName("kaptGenerateStubsKotlin")
     }
+}
+
+private fun String.toIdentifier(): String {
+    return UUID.nameUUIDFromBytes(toByteArray()).toString()
 }

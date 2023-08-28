@@ -1,5 +1,5 @@
 {
-  "openapi": "3.1.0",
+  "openapi": "3.0.0",
   "servers": [
     {
       "url": "/api/v1"
@@ -222,7 +222,7 @@
             "name": "assignmentId",
             "required": true,
             "schema": {
-              "$ref": "schemas/simple-types.json#/components/schemas/QuestionnaireAssignmentId"
+              "$ref": ".dependencies/contract-rest-clinical-data/contract-rest-clinical-data.json#/components/schemas/CreatePatientRequestBody"
             },
             "description": "The assignment ID that the answers are being submitted for"
           },
