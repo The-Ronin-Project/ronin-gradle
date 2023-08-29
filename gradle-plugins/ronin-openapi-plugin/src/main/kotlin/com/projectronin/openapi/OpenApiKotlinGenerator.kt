@@ -4,6 +4,7 @@ import com.projectronin.gradle.helpers.addTaskThatDependsOnThisByName
 import com.projectronin.gradle.helpers.implementationDependency
 import com.projectronin.openapi.shared.OpenApiKotlinConsolidatorParameters
 import com.projectronin.openapi.shared.OpenApiKotlinGeneratorParameters
+import com.projectronin.openapi.shared.SupplementalConfiguration
 import com.projectronin.openapi.shared.consolidateSpec
 import com.projectronin.openapi.shared.createWorkQueueWithDependencies
 import com.projectronin.openapi.shared.generateSources
@@ -64,6 +65,7 @@ interface OpenApiKotlinGeneratorExtension {
     val controllerOptions: SetProperty<String>
     val modelOptions: SetProperty<String>
     val clientOptions: SetProperty<String>
+    val supplementalConfiguration: Property<SupplementalConfiguration>
 }
 
 interface RoninOpenApiPluginWorkParameters : OpenApiKotlinConsolidatorParameters, OpenApiKotlinGeneratorParameters
@@ -90,6 +92,10 @@ abstract class OpenApiKotlinGeneratorTask : DefaultTask() {
 
     @get:Nested
     abstract val schemas: ListProperty<OpenApiKotlinGeneratorInputSpec>
+
+    @get:Nested
+    @get:Optional
+    abstract val supplementalConfiguration: Property<SupplementalConfiguration>
 
     @get:OutputDirectory
     abstract val outputDir: DirectoryProperty
@@ -151,6 +157,7 @@ abstract class OpenApiKotlinGeneratorTask : DefaultTask() {
                 parameters.controllerOptions.set(controllerOptions)
                 parameters.modelOptions.set(modelOptions)
                 parameters.clientOptions.set(clientOptions)
+                parameters.supplementalConfiguration.set(supplementalConfiguration)
             }
         }
     }
@@ -189,6 +196,7 @@ class OpenApiKotlinGenerator : Plugin<Project> {
             controllerOptions.convention(emptySet())
             modelOptions.convention(emptySet())
             clientOptions.convention(emptySet())
+            supplementalConfiguration.convention(SupplementalConfiguration())
         }
 
         project.implementationDependency(DependencyHelper.jakarta)
@@ -210,6 +218,7 @@ class OpenApiKotlinGenerator : Plugin<Project> {
             it.clientOptions.set(ex.clientOptions)
             it.modelOptions.set(ex.modelOptions)
             it.controllerOptions.set(ex.controllerOptions)
+            it.supplementalConfiguration.set(ex.supplementalConfiguration)
         }.get()
         generatorTask.addTaskThatDependsOnThisByName("compileKotlin")
         generatorTask.addTaskThatDependsOnThisByName("processResources")
