@@ -55,7 +55,7 @@ fun generateSources(parameters: OpenApiKotlinGeneratorParameters) {
                                 it.replace(
                                     "import org.springframework.stereotype.Controller",
                                     "import org.reactivestreams.Publisher\n" +
-                                            "import org.springframework.stereotype.Controller"
+                                        "import org.springframework.stereotype.Controller"
                                 )
                                     /* There's an unsurprising difference in the return type requirements between
                                      * Flux and Mono which necessitates some additional configuration here. As API
