@@ -81,3 +81,25 @@ configure<OpenApiKotlinGeneratorExtension> {
 ```
 
 Task outputs should be automatically included in your kotlin compile.
+
+### Supplemental Configuration:
+Optional, additional configuration intended to bridge gaps where project requirements extend beyond the current feature
+sets of the underlying libraries.
+
+```kotlin
+import com.projectronin.openapi.shared.SupplementalConfiguration
+
+configure<OpenApiKotlinGeneratorExtension> {
+    schemas.add(
+        extensions.create("api-v1", OpenApiKotlinGeneratorInputSpec::class.java).apply {
+            // Primary Extension Configurations
+            supplementalConfiguration.set(
+                SupplementalConfiguration(
+                    controllerReactiveTypes = true,
+                    controllerReactiveStreamTypes = true
+                )
+            )
+        }
+    )
+}
+```

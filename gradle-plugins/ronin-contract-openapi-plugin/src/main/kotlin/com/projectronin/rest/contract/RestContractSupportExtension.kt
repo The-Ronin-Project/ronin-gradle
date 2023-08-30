@@ -1,5 +1,6 @@
 package com.projectronin.rest.contract
 
+import com.projectronin.openapi.shared.SupplementalConfiguration
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
@@ -59,4 +60,10 @@ interface RestContractSupportExtension {
      * See https://github.com/cjbooms/fabrikt/blob/10.0.0/src/main/kotlin/com/cjbooms/fabrikt/cli/CodeGenOptions.kt
      */
     val clientOptions: SetProperty<String>
+
+    /**
+     * Supplemental configuration is intended to bridge gaps where requirements fall outside the current feature
+     * sets of the underlying libraries — *stability not guaranteed*.
+     */
+    val supplementalConfiguration: Property<SupplementalConfiguration>
 }

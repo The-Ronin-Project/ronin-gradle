@@ -69,6 +69,24 @@ class OpenApiKotlinGeneratorFunctionalTest : AbstractFunctionalTest() {
         }
     }
 
+    @Test
+    fun `can generate webflux-friendly controller interfaces`() {
+        val result = setupAndExecuteTestProject(
+            listOf("generateOpenApiCode", "--stacktrace")
+        ) {
+            settingsFile.appendText("\n include(\"app\")\n")
+            buildFile.writeText("")
+            copyResourceDir("webflux-test", projectDir)
+        }
+
+        assertThat(result.output).contains("BUILD SUCCESSFUL")
+
+        with(projectDir.resolve("app/build/generated/openapi-kotlin-generator/kotlin/com/examples/externalmodels/api/v1/controllers/FooController.kt").readText()) {
+            assertThat(this).contains("import org.reactivestreams.Publisher")
+            assertThat(this).contains("fun getFoo(): Publisher<Wrapper>")
+        }
+    }
+
     override fun defaultPluginId(): String = "com.projectronin.openapi"
 
     override fun defaultAdditionalBuildFileText(): String? = null

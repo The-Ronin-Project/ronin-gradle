@@ -34,18 +34,47 @@ fun generateSources(parameters: OpenApiKotlinGeneratorParameters) {
         validationLibrary = ValidationLibrary.JAKARTA_VALIDATION
     )
 
+    val supplementalConfiguration = parameters.supplementalConfiguration.get()
     val packages = Packages(parameters.packageName.get())
     val sourceApi = SourceApi.create(apiContent, emptyList())
     val generator = CodeGenerator(packages, sourceApi, Path.of(""), Path.of(""))
     generator.generate().forEach { it.writeFileTo(parameters.generatedSourcesOutputDir.get().asFile) }
 
-    // because the generator hasn't been updated with the javax -> jakarta switch, brute-force that here
-    // this should really be fixed, but there's a bug in there somewhere
+    // Brute-force various corrections or expanded feature support
     parameters.generatedSourcesOutputDir.get().asFile.walk()
-        .forEach {
-            if (it.name.endsWith(".kt")) {
-                it.writeText(
-                    it.readText().replace("javax.", "jakarta.")
+        .forEach { file ->
+            if (file.name.endsWith(".kt")) {
+                file.writeText(
+                    file.readText()
+                        // the generator hasn't been updated with the javax -> jakarta switch
+                        // this should really be fixed, but there's a bug in there somewhere
+                        .replace("javax.", "jakarta.")
+                        // the generator does not support Spring Reactive targets
+                        .let {
+                            if (supplementalConfiguration.controllerReactiveTypes && file.name.endsWith("Controller.kt")) {
+                                it.replace(
+                                    "import org.springframework.stereotype.Controller",
+                                    "import org.reactivestreams.Publisher\n" +
+                                        "import org.springframework.stereotype.Controller"
+                                )
+                                    /* There's an unsurprising difference in the return type requirements between
+                                     * Flux and Mono which necessitates some additional configuration here. As API
+                                     * interactions are likely to be exchange-based for the foreseeable future, the
+                                     * streaming variant is the opt-in feature. */
+                                    .replace(
+                                        Regex(": ResponseEntity<List<([^>]*)>>"),
+                                        if (supplementalConfiguration.controllerReactiveStreamTypes) {
+                                            ": Publisher<$1>"
+                                        } else {
+                                            ": Publisher<List<$1>>"
+                                        }
+                                    )
+                                    // The order of these replaces is important
+                                    .replace(Regex(": ResponseEntity<([^>]*)>"), ": Publisher<$1>")
+                            } else {
+                                it
+                            }
+                        }
                 )
             }
         }

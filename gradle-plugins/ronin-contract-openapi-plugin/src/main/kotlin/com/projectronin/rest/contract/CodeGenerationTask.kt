@@ -1,5 +1,6 @@
 package com.projectronin.rest.contract
 
+import com.projectronin.openapi.shared.SupplementalConfiguration
 import com.projectronin.openapi.shared.createWorkQueueWithDependencies
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
@@ -43,6 +44,9 @@ abstract class CodeGenerationTask : DefaultTask() {
             parameters.controllerOptions.set(extension.controllerOptions)
             parameters.modelOptions.set(extension.modelOptions)
             parameters.clientOptions.set(extension.clientOptions)
+            parameters.supplementalConfiguration.set(
+                extension.supplementalConfiguration.getOrElse(SupplementalConfiguration())
+            )
         }
         workQueue.await()
     }
