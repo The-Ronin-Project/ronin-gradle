@@ -54,10 +54,10 @@ class SpringServiceConventionsPlugin : Plugin<Project> {
                     val description = git.describe()
                         .setTags(true)
                         .setAlways(true)
-                        .setMatch("v*.*.*")
+                        .setMatch("*.*.*")
                         .setTarget("HEAD")
                         .call()
-                    val (lastTag, commitDistance) = when (val match = "(v.*)-([0-9]+)-g.?[0-9a-fA-F]{3,}".toRegex().find(description)) {
+                    val (lastTag, commitDistance) = when (val match = "([0-9]+\\.*[0-9]+\\.*[0-9]+.*)-([0-9]+)-g.?[0-9a-fA-F]{3,}".toRegex().find(description)) {
                         null -> Pair(null, null)
                         else -> {
                             val (a, b) = match.destructured
