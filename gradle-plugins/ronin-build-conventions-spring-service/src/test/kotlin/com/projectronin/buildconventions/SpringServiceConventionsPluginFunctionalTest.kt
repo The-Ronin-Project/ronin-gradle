@@ -16,7 +16,7 @@ class SpringServiceConventionsPluginFunctionalTest : AbstractFunctionalTest() {
         val result = setupAndExecuteTestProject(
             listOf("build", "--stacktrace")
         ) {
-            it.tag().setName("v1.0.0-alpha").call()
+            it.tag().setName("1.0.0-alpha").call()
             copyResourceDir("projects/demo", projectDir)
             projectDir.resolve(".gitignore").appendText("\ngradle.properties\n")
             it.add().addFilepattern(".").call()
@@ -34,7 +34,7 @@ class SpringServiceConventionsPluginFunctionalTest : AbstractFunctionalTest() {
         assertThat(projectDir.resolve("build/generated/resources/service-info/service-info.json")).exists()
         val info = ObjectMapper().readTree(projectDir.resolve("build/generated/resources/service-info/service-info.json"))
         assertThat(info["version"]?.textValue()).isEqualTo("1.0.0-SNAPSHOT")
-        assertThat(info["lastTag"]?.textValue()).isEqualTo("v1.0.0-alpha")
+        assertThat(info["lastTag"]?.textValue()).isEqualTo("1.0.0-alpha")
         assertThat(info["commitDistance"]?.intValue()).isEqualTo(1)
         assertThat(info["gitHash"]?.textValue()).matches("^[a-f0-9]{3,}$")
         assertThat(info["gitHashFull"]?.textValue()).matches("^[a-f0-9]{40}$")
@@ -77,7 +77,7 @@ class SpringServiceConventionsPluginFunctionalTest : AbstractFunctionalTest() {
         setupAndExecuteTestProject(
             listOf("generateServiceInfo", "--stacktrace")
         ) {
-            it.tag().setName("v1.0.0-alpha").call()
+            it.tag().setName("1.0.0-alpha").call()
             copyResourceDir("projects/demo", projectDir)
             projectDir.resolve(".gitignore").appendText("\ngradle.properties\n")
             it.add().addFilepattern(".").call()
@@ -92,7 +92,7 @@ class SpringServiceConventionsPluginFunctionalTest : AbstractFunctionalTest() {
         assertThat(projectDir.resolve("build/generated/resources/service-info/service-info.json")).exists()
         val info = ObjectMapper().readTree(projectDir.resolve("build/generated/resources/service-info/service-info.json"))
         assertThat(info["version"]?.textValue()).isEqualTo("1.0.0-SNAPSHOT")
-        assertThat(info["lastTag"]?.textValue()).isEqualTo("v1.0.0-alpha")
+        assertThat(info["lastTag"]?.textValue()).isEqualTo("1.0.0-alpha")
         assertThat(info["commitDistance"]?.intValue()).isEqualTo(1)
         assertThat(info["gitHash"]?.textValue()).matches("^[a-f0-9]{3,}$")
         assertThat(info["gitHashFull"]?.textValue()).matches("^[a-f0-9]{40}$")
