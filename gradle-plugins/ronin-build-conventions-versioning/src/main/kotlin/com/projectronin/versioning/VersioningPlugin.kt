@@ -26,7 +26,7 @@ class VersioningPlugin : Plugin<Project> {
                         // this code ensures that we get a labeled version for anything that's not master, main, or version/v<NUMBER> or v<NUMBER>.<NUMBER>.<NUMBER>,
                         // but that we get a PLAIN version for  master, main, or version/v<NUMBER> or v<NUMBER>.<NUMBER>.<NUMBER>
                         // The jiraBranchRegex tries to identify a ticket project-<NUMBER> format and uses that as the label
-                        if (!supportedHeads.contains(branchName) && !branchName.matches("^version/v\\d+$".toRegex()) && !branchName.matches("^v\\d+\\.\\d+\\.\\d+$".toRegex())) {
+                        if (!supportedHeads.contains(branchName) && !branchName.matches("^version/v?\\d+$".toRegex()) && !branchName.matches("^v?\\d+\\.\\d+\\.\\d+$".toRegex())) {
                             val jiraBranchRegex = Regex("(?:.*/)?(\\w+)-(\\d+)(?:-(.+))?")
                             val match = jiraBranchRegex.matchEntire(branchName)
                             val branchExtension = match?.let {
