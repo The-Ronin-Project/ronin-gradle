@@ -1,6 +1,5 @@
 package com.projectronin.json.contract
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.projectronin.gradle.test.AbstractFunctionalTest
 import org.assertj.core.api.Assertions.assertThat
 import org.eclipse.jgit.api.Git
@@ -13,9 +12,6 @@ import kotlin.io.path.moveTo
  * A simple functional test for the 'com.projectronin.rest.contract.support' plugin.
  */
 class JsonContractPluginTestFunctionalTest : AbstractFunctionalTest() {
-
-    private val jsonMapper = ObjectMapper()
-
     @Test
     fun `lists all the correct tasks`() {
         val result = setupAndExecuteTestProject(listOf("tasks", "--stacktrace"))
@@ -134,7 +130,7 @@ class JsonContractPluginTestFunctionalTest : AbstractFunctionalTest() {
             projectSetup = ProjectSetup()
         ) {
             defaultExtraStuffToDo(it)
-            it.tag().setName("v2.7.4").call()
+            it.tag().setName("2.7.4").call()
         }
         assertThat(result.output).contains("BUILD SUCCESSFUL")
     }
@@ -160,7 +156,7 @@ class JsonContractPluginTestFunctionalTest : AbstractFunctionalTest() {
             projectSetup = ProjectSetup()
         ) {
             defaultExtraStuffToDo(it)
-            it.tag().setName("v2.7.4").call()
+            it.tag().setName("2.7.4").call()
         }
         assertThat(result.output).contains("BUILD SUCCESSFUL")
     }
@@ -186,7 +182,7 @@ class JsonContractPluginTestFunctionalTest : AbstractFunctionalTest() {
             projectSetup = ProjectSetup()
         ) {
             defaultExtraStuffToDo(it)
-            it.tag().setName("v1.3.7-alpha").call()
+            it.tag().setName("1.3.7-alpha").call()
         }
         assertThat(result.output).contains("BUILD SUCCESSFUL")
     }

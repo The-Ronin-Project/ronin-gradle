@@ -3,7 +3,6 @@ package com.projectronin.rest.contract
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.databind.node.TextNode
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.projectronin.gradle.test.AbstractFunctionalTest
 import com.projectronin.gradle.test.getArchiveEntries
@@ -33,8 +32,8 @@ class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
             "2.0.0-SNAPSHOT",
             "v2"
         ) { git ->
-            git.tag().setName("v2.0.0-alpha").call()
-            copyBaseResources("v2")
+            git.tag().setName("2.0.0-alpha").call()
+            copyBaseResources("2")
             writeSpectralConfig()
             projectDir.resolve("build.gradle.kts").appendText(
                 """
@@ -125,16 +124,6 @@ class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
 
     private fun mapperForFile(file: File): ObjectMapper = if (file.name.endsWith(".json")) jsonMapper else yamlMapper
 
-    private fun File.setVersion(version: String) {
-        val tree = readTree()
-        (tree["info"] as ObjectNode).set<ObjectNode>("version", TextNode(version))
-        writeValue(tree)
-    }
-
-    private fun File.readFileVersion(): String {
-        return this.readTree()["info"]["version"].asText()
-    }
-
     private fun File.readTree(): ObjectNode {
         return mapperForFile(this).readTree(this) as ObjectNode
     }
@@ -151,7 +140,7 @@ class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
         copyBaseResources()
         writeSpectralConfig()
         commit(git)
-        git.tag().setName("v1.4.7").call()
+        git.tag().setName("1.4.7").call()
     }
 
     private fun commit(git: Git) {
