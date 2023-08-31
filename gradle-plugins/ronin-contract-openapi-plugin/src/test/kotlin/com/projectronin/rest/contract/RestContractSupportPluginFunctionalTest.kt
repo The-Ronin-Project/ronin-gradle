@@ -30,10 +30,10 @@ class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
     fun `building the API works for v2`() {
         basicBuildTest(
             "2.0.0-SNAPSHOT",
-            "2"
+            "v2"
         ) { git ->
             git.tag().setName("2.0.0-alpha").call()
-            copyBaseResources("2")
+            copyBaseResources("v2")
             writeSpectralConfig()
             projectDir.resolve("build.gradle.kts").appendText(
                 """
