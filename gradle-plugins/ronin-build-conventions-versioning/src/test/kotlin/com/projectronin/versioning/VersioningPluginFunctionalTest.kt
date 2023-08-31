@@ -65,7 +65,7 @@ class VersioningPluginFunctionalTest : AbstractFunctionalTest() {
     @Test
     fun `tag works`() {
         val result = setupAndExecuteTestProject(listOf("currentVersion", "--stacktrace")) { git ->
-            git.tag().setName("v1.0.0").call()
+            git.tag().setName("1.0.0").call()
         }
         assertThat(result.output).contains("Project version: 1.0.0\n")
     }
@@ -75,10 +75,10 @@ class VersioningPluginFunctionalTest : AbstractFunctionalTest() {
         val result = setupAndExecuteTestProject(
             listOf("currentVersion", "--stacktrace"),
             projectSetup = ProjectSetup(
-                env = mapOf("REF_NAME" to "v1.0.0")
+                env = mapOf("REF_NAME" to "1.0.0")
             )
         ) { git ->
-            git.tag().setName("v1.0.0").call()
+            git.tag().setName("1.0.0").call()
         }
         assertThat(result.output).contains("Project version: 1.0.0\n")
     }
@@ -86,7 +86,7 @@ class VersioningPluginFunctionalTest : AbstractFunctionalTest() {
     @Test
     fun `next version works`() {
         val result = setupAndExecuteTestProject(listOf("currentVersion", "--stacktrace")) { git ->
-            git.tag().setName("v1.1.0-alpha").call()
+            git.tag().setName("1.1.0-alpha").call()
         }
         assertThat(result.output).contains("Project version: 1.1.0-SNAPSHOT\n")
     }

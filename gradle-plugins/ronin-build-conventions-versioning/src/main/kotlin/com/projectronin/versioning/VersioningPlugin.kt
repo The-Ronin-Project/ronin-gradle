@@ -18,6 +18,7 @@ class VersioningPlugin : Plugin<Project> {
                 scmVersion.apply {
                     tag.apply {
                         initialVersion { _, _ -> "1.0.0" }
+                        prefix.set("")
                     }
                     versionCreator { versionFromTag, position ->
                         val branchName = System.getenv("REF_NAME")?.ifBlank { null } ?: position.branch
