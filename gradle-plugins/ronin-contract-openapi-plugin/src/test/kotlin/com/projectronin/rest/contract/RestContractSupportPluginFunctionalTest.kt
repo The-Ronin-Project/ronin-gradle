@@ -30,7 +30,7 @@ class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
     fun `building the API works for v2`() {
         basicBuildTest(
             "2.0.0-SNAPSHOT",
-            "v2"
+            "2"
         ) { git ->
             git.tag().setName("2.0.0-alpha").call()
             copyBaseResources("2")
