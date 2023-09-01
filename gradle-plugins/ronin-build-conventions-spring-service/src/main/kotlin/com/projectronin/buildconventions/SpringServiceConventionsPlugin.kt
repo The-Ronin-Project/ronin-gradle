@@ -54,21 +54,44 @@ class SpringServiceConventionsPlugin : Plugin<Project> {
                     val description = git.describe()
                         .setTags(true)
                         .setAlways(true)
-                        .setMatch("*.*.*")
+                        .setMatch("[0-9]*.[0-9]*.[0-9]*")
                         .setTarget("HEAD")
                         .call()
-                    val (lastTag, commitDistance) = when (val match = "([0-9]+\\.*[0-9]+\\.*[0-9]+.*)-([0-9]+)-g.?[0-9a-fA-F]{3,}".toRegex().find(description)) {
-                        null -> Pair(null, null)
+
+                    // note that this won't produce the same version as SERVICE_VERSION would.  But the intent is that this is only
+                    // informational AND that GHAs will set SERVICE_VERSION.
+                    val descriptionPattern = """^([0-9]+)\.*([0-9]+)\.*([0-9]+)(-alpha)?(?:-([0-9]+)-g.?[0-9a-fA-F]{3,})?$""".toRegex()
+                    val (lastTag: String?, commitDistance: Int?, tagBasedVersion: String?) = when (val match = descriptionPattern.find(description)) {
+                        null -> Triple(null, null, null)
+
                         else -> {
-                            val (a, b) = match.destructured
-                            Pair(a, b)
+                            val (major, minor, patch, suffix, commitDistance) = match.destructured
+                            Triple(
+                                "$major.$minor.$patch${suffix.takeIf { it.isNotBlank() } ?: ""}",
+                                commitDistance.takeIf { it.isNotBlank() }?.toInt() ?: 0,
+                                when (commitDistance) {
+                                    "0", "" -> "$major.$minor.$patch"
+                                    else -> if (suffix.isNotBlank()) {
+                                        "$major.$minor.$patch-SNAPSHOT"
+                                    } else {
+                                        "$major.$minor.${patch.toInt() + 1}-SNAPSHOT"
+                                    }
+                                }
+                            )
                         }
                     }
+
+                    val version: String =
+                        when (val serviceVersion: String? = target.properties.getOrDefault("service-version", System.getenv("SERVICE_VERSION"))?.toString()?.takeIf { it.isNotBlank() }) {
+                            null -> tagBasedVersion ?: "1.0.0-SNAPSHOT"
+                            else -> serviceVersion
+                        }
+
                     // language=json
                     outputFile.asFile.writeText(
                         """
                         {
-                          "version": "${t.project.version}",
+                          "version": "$version",
                           "lastTag": "${lastTag ?: "n/a"}",
                           "commitDistance": ${commitDistance ?: 0},
                           "gitHash": "${reader.abbreviate(ref.objectId).name()}",
