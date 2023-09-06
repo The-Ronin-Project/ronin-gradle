@@ -114,6 +114,71 @@ class RootConventionsPluginFunctionalTest : AbstractFunctionalTest() {
         verifySubProjectDokka(projectDir.resolve("subproject-03"), "subproject03", "subproject-03")
     }
 
+    @Test
+    fun `should build a single-module project`() {
+        val m2RepositoryDir = projectDir.resolve(".m2/repository")
+
+        val groupId = "com.projectronin.services.gradle"
+
+        copyPluginToLocalRepo(m2RepositoryDir, groupId, "ronin-build-conventions-spring-service", "com.projectronin.buildconventions.spring-service", projectVersion)
+        copyPluginToLocalRepo(m2RepositoryDir, groupId, "ronin-build-conventions-kotlin", "com.projectronin.buildconventions.kotlin-jvm", projectVersion)
+        copyJarToLocalRepository(m2RepositoryDir, groupId, rootDirectory.resolve("shared-libraries/gradle-helpers"), "gradle-helpers", projectVersion)
+
+        val result = setupAndExecuteTestProject(
+            listOf("build", "--stacktrace", "-Dmaven.repo.local=$m2RepositoryDir"),
+            projectSetup = ProjectSetup(
+                extraSettingsFileText = null,
+                otherPluginsToApply = listOf(
+                    """id("com.projectronin.buildconventions.spring-service") version "$projectVersion"""",
+                    """id("com.projectronin.buildconventions.kotlin-jvm") version "$projectVersion""""
+                ),
+                extraBuildFileText = """
+                    group = "com.example"
+                    dependencies {
+                        implementation("org.springframework.boot:spring-boot-starter")
+                        implementation("org.jetbrains.kotlin:kotlin-reflect")
+                        testImplementation("org.springframework.boot:spring-boot-starter-test")
+                    }
+                """.trimIndent()
+            )
+        ) {
+            copyResourceDir("projects/single", projectDir)
+        }
+
+        assertThat(result.output).contains("BUILD SUCCESSFUL")
+
+        val reportResult = runProjectBuild(
+            listOf("jacocoTestReport", "--stacktrace", "-Dmaven.repo.local=$m2RepositoryDir")
+        )
+
+        assertThat(reportResult.output).contains("BUILD SUCCESSFUL")
+
+        val builderFactory = DocumentBuilderFactory.newInstance()
+        val builder = builderFactory.newDocumentBuilder()
+        val xmlDocument = builder.parse(
+            ByteArrayInputStream(
+                projectDir.resolve("build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml").readText()
+                    .replace("<!DOCTYPE.*?>".toRegex(), "")
+                    .toByteArray()
+            )
+        )
+        val xPath = XPathFactory.newInstance().newXPath()
+        with(xPath.compile("report/counter[@type='INSTRUCTION']").evaluate(xmlDocument, XPathConstants.NODE) as Element) {
+            assertThat(getAttribute("missed")).isEqualTo("13")
+            assertThat(getAttribute("covered")).isEqualTo("3")
+        }
+
+        val sonarResult = runProjectBuild(
+            listOf("sonar", "--stacktrace", "--dry-run", "-Dmaven.repo.local=$m2RepositoryDir")
+        )
+
+        assertThat(sonarResult.output).contains(
+            ":test SKIPPED\n" +
+                ":jacocoTestReport SKIPPED\n" +
+                ":sonar SKIPPED\n"
+        )
+    }
+
     private fun verifySubProject(path: File, expectedArtifactId: String, expectedVersion: String? = null) {
         assertThat(path.resolve("build/libs/$expectedArtifactId${expectedVersion?.let { "-$it" } ?: ""}.jar")).exists()
         assertThat(path.resolve("build/jacoco/test.exec")).exists()

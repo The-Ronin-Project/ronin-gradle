@@ -74,10 +74,12 @@ class KotlinJvmConventionsPlugin : Plugin<Project> {
                     }
                 }
 
-                extensions.getByType(KtlintExtension::class.java).apply {
-                    filter {
-                        it.exclude { entry ->
-                            entry.file.toString().contains("generated")
+                extensions.getByName("ktlint").apply {
+                    if (this is KtlintExtension) {
+                        filter {
+                            it.exclude { entry ->
+                                entry.file.toString().contains("generated")
+                            }
                         }
                     }
                 }

@@ -10,7 +10,6 @@ dependencies {
     testImplementation(libs.assertj)
     testImplementation(gradleTestKit())
     testImplementation(project(":shared-libraries:gradle-testkit-utilities"))
-    testImplementation(project(":gradle-plugins:ronin-build-conventions-kotlin"))
 }
 
 gradlePlugin {
@@ -33,3 +32,19 @@ dependencyHelper {
         )
     )
 }
+
+tasks.getByName("test").dependsOn(
+    ":gradle-plugins:ronin-build-conventions-spring-service:assemble",
+    ":gradle-plugins:ronin-build-conventions-spring-service:generateMetadataFileForPluginMavenPublication",
+    ":gradle-plugins:ronin-build-conventions-spring-service:generateMetadataFileForSpringServicePluginPluginMarkerMavenPublication",
+    ":gradle-plugins:ronin-build-conventions-spring-service:generatePomFileForPluginMavenPublication",
+    ":gradle-plugins:ronin-build-conventions-spring-service:generatePomFileForSpringServicePluginPluginMarkerMavenPublication",
+    ":gradle-plugins:ronin-build-conventions-kotlin:assemble",
+    ":gradle-plugins:ronin-build-conventions-kotlin:generateMetadataFileForKotlinJvmPluginPluginMarkerMavenPublication",
+    ":gradle-plugins:ronin-build-conventions-kotlin:generateMetadataFileForPluginMavenPublication",
+    ":gradle-plugins:ronin-build-conventions-kotlin:generatePomFileForKotlinJvmPluginPluginMarkerMavenPublication",
+    ":gradle-plugins:ronin-build-conventions-kotlin:generatePomFileForPluginMavenPublication",
+    ":shared-libraries:gradle-helpers:assemble",
+    ":shared-libraries:gradle-helpers:generateMetadataFileForMavenPublication",
+    ":shared-libraries:gradle-helpers:generatePomFileForMavenPublication"
+)

@@ -73,6 +73,16 @@ abstract class AbstractFunctionalTest {
     protected val pluginResourcesDirectory: File = File(functionalTestProperties["directory.resources"]!!)
 
     /**
+     * The root of the whole project
+     */
+    protected val rootDirectory: File = File(functionalTestProperties["directory.root"]!!)
+
+    /**
+     * The current version of the project
+     */
+    protected val projectVersion: String = functionalTestProperties["project.version"]!!
+
+    /**
      * The name of the generated project.  Not particularly important, but is used for things like created or published artifacts, so
      * might be useful to change or utilize in your tests.
      */
@@ -369,6 +379,77 @@ abstract class AbstractFunctionalTest {
             """.trimIndent()
         )
         newTempDirectory.deleteRecursively()
+    }
+
+    protected fun putFileIntoLocalRepository(sourceFile: File, repoRoot: File, relativeDestFile: String) {
+        val destFile = repoRoot.resolve(relativeDestFile)
+        with(destFile.parentFile) {
+            if (!exists()) {
+                mkdirs()
+            }
+        }
+        sourceFile.copyTo(destFile, true)
+    }
+
+    protected fun copyPluginToLocalRepo(
+        m2RepositoryDir: File,
+        groupId: String,
+        projectName: String,
+        pluginId: String,
+        version: String
+    ) {
+        val serviceRoot = pluginProjectDirectory.parentFile.resolve("$projectName")
+        val jarDestRoot = "${groupId.replace(".", "/")}/$projectName/$version"
+        val pluginDestRoot = "${pluginId.replace(".", "/")}/$pluginId.gradle.plugin/$version"
+
+        putFileIntoLocalRepository(
+            serviceRoot.resolve("build/libs/$projectName-$version.jar"),
+            m2RepositoryDir,
+            "$jarDestRoot/$projectName-$version.jar"
+        )
+        putFileIntoLocalRepository(
+            serviceRoot.resolve("build/publications/pluginMaven/module.json"),
+            m2RepositoryDir,
+            "$jarDestRoot/$projectName-$version.module"
+        )
+        putFileIntoLocalRepository(
+            serviceRoot.resolve("build/publications/pluginMaven/pom-default.xml"),
+            m2RepositoryDir,
+            "$jarDestRoot/$projectName-$version.pom"
+        )
+        val segs = pluginId.split(".").last().split("-")
+        val pluginPrefix = segs.first().lowercase() + segs.subList(1, segs.size).joinToString("") { seg -> seg[0].uppercase() + seg.substring(1).lowercase() }
+        putFileIntoLocalRepository(
+            serviceRoot.resolve("build/publications/${pluginPrefix}PluginPluginMarkerMaven/pom-default.xml"),
+            m2RepositoryDir,
+            "$pluginDestRoot/$pluginId.gradle.plugin-$version.pom"
+        )
+    }
+
+    protected fun copyJarToLocalRepository(
+        m2RepositoryDir: File,
+        groupId: String,
+        projectDir: File,
+        projectName: String,
+        version: String
+    ) {
+        val jarDestRoot = "${groupId.replace(".", "/")}/$projectName/$version"
+
+        putFileIntoLocalRepository(
+            projectDir.resolve("build/libs/$projectName-$version.jar"),
+            m2RepositoryDir,
+            "$jarDestRoot/$projectName-$version.jar"
+        )
+        putFileIntoLocalRepository(
+            projectDir.resolve("build/publications/Maven/module.json"),
+            m2RepositoryDir,
+            "$jarDestRoot/$projectName-$version.module"
+        )
+        putFileIntoLocalRepository(
+            projectDir.resolve("build/publications/Maven/pom-default.xml"),
+            m2RepositoryDir,
+            "$jarDestRoot/$projectName-$version.pom"
+        )
     }
 
     /**

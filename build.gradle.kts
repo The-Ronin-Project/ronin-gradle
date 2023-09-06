@@ -166,6 +166,8 @@ gradlePluginSubprojects.forEach { subProject ->
                     directory.project=${subProject.projectDir}
                     directory.build=${subProject.buildDir}
                     directory.resources=${subProject.buildDir.resolve("resources/test")}
+                    directory.root=${rootProject.rootDir}
+                    project.version=${projectVersion}
                 """.trimIndent()
                 )
             }

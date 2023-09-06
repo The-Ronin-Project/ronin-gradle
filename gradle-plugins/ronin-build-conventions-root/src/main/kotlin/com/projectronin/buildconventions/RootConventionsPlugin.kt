@@ -11,39 +11,119 @@ import org.gradle.api.attributes.TestSuiteType
 import org.gradle.api.reporting.ReportingExtension
 import org.gradle.api.tasks.testing.Test
 import org.gradle.testing.jacoco.plugins.JacocoCoverageReport
+import org.gradle.testing.jacoco.tasks.JacocoReport
 import org.sonarqube.gradle.SonarExtension
 
 class RootConventionsPlugin : Plugin<Project> {
 
-    override fun apply(target: Project) {
-        target
-            .applyPlugin(BaseGradlePluginIdentifiers.base)
-            .applyPlugin(BaseGradlePluginIdentifiers.jacocoReportAggregation)
-            .applyPlugin(DependencyHelper.Plugins.sonar.id)
-            .applyPlugin(DependencyHelper.Plugins.ktlint.id)
-            .applyPlugin(DependencyHelper.Plugins.dokka.id)
-            .applyPlugin(DependencyHelper.Plugins.releasehub.id)
+    companion object {
+        private const val BUILD_FILE_NAME = "build.gradle.kts"
+        private const val JACOCO_AGGREGATION_DEPENDENCY_SCOPE = "jacocoAggregation"
+        private const val RONIN_SONAR_CONFIG_NAME = "roninSonar"
+        private const val DEFAULT_XML_REPORT_LOCATION = "reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml"
+        private const val CLASS_DIR_NAME = "classes"
+        private const val SONAR_TASK_NAME = "sonar"
+        private const val SINGLE_REPORT_TASK_NAME = "jacocoTestReport"
+        private const val AGGREGATED_REPORT_TASK_NAME = "testCodeCoverageReport"
+        private val coverageExclusions: List<String> = listOf(
+            "**/test/**",
+            "**/test-utilities/**",
+            "**/*.kts",
+            "**/kotlin/dsl/accessors/**",
+            "**/kotlin/test/**"
+        )
+        private val jacocoIncludes: String = "/jacoco/*.exec"
+    }
 
-        val meaningfulSubProjects = target.subprojects.filter { it.projectDir.resolve("build.gradle.kts").exists() }
+    override fun apply(target: Project) {
+        val meaningfulSubProjects = target.subprojects.filter { it.projectDir.resolve(BUILD_FILE_NAME).exists() }
+
+        val isAggregationProject = meaningfulSubProjects.isNotEmpty()
+
+        if (isAggregationProject) {
+            target.logger.info("Applying root to a project with no sub-projects.")
+        }
+
+        applyOtherPlugins(target, isAggregationProject)
 
         meaningfulSubProjects.forEach { subProject ->
             subProject.group = target.group
-            target.projectDependency("jacocoAggregation", ":${subProject.path}")
+            target.projectDependency(JACOCO_AGGREGATION_DEPENDENCY_SCOPE, ":${subProject.path}")
         }
 
-        target.extensions.create("roninSonar", RoninSonarConfig::class.java).apply {
+        applySonarConfigs(target)
+
+        if (isAggregationProject) {
+            applyAggregationConfigs(target, meaningfulSubProjects)
+        } else {
+            applySingleConfig(target)
+        }
+    }
+
+    private fun applySingleConfig(target: Project) {
+        target.afterEvaluate {
+            it.tasks.getByName(SINGLE_REPORT_TASK_NAME).apply {
+                if (this is JacocoReport) {
+                    val roninSonarConfig = target.extensions.getByType(RoninSonarConfig::class.java)
+                    reports.xml.required.set(true)
+                    reports.xml.outputLocation.set(target.layout.buildDirectory.file(roninSonarConfig.xmlReportPath.get()))
+                    executionData.setFrom(target.fileTree(target.buildDir).include(jacocoIncludes))
+                    classDirectories.setFrom(
+                        target.fileTree(target.buildDir.resolve(CLASS_DIR_NAME)).exclude(coverageExclusions)
+                    )
+                }
+                dependsOnTasksByType(Test::class.java, target)
+            }
+            it.tasks.getByName(SONAR_TASK_NAME).dependsOn(SINGLE_REPORT_TASK_NAME)
+        }
+    }
+
+    private fun applyAggregationConfigs(target: Project, meaningfulSubProjects: List<Project>) {
+        @Suppress("UnstableApiUsage")
+        target.extensions.getByType(ReportingExtension::class.java).apply {
+            reports.apply {
+                create(AGGREGATED_REPORT_TASK_NAME, JacocoCoverageReport::class.java).apply {
+                    reportTask.get().apply {
+                        executionData.setFrom(
+                            meaningfulSubProjects.map { subproject ->
+                                subproject.fileTree(subproject.buildDir).include(jacocoIncludes)
+                            }
+                        )
+                        classDirectories.setFrom(
+                            meaningfulSubProjects.map { subproject ->
+                                subproject.fileTree(subproject.buildDir.resolve(CLASS_DIR_NAME)).exclude(coverageExclusions)
+                            }
+                        )
+                    }
+                    testType.set(TestSuiteType.UNIT_TEST)
+                }
+            }
+        }
+
+        target.tasks.getByName(AGGREGATED_REPORT_TASK_NAME) { testCodeCoverageReport ->
+            meaningfulSubProjects.forEach { subProject ->
+                testCodeCoverageReport.dependsOnTasksByType(Test::class.java, subProject)
+            }
+        }
+        target.tasks.getByName(SONAR_TASK_NAME).dependsOn(AGGREGATED_REPORT_TASK_NAME)
+
+        target.subprojects.forEach { subProject ->
+            if (subProject.childProjects.isNotEmpty()) {
+                subProject.tasks.whenTaskAdded { task ->
+                    if (task.name == "dokkaHtmlMultiModule") {
+                        task.enabled = false
+                    }
+                }
+            }
+        }
+    }
+
+    private fun applySonarConfigs(target: Project) {
+        target.extensions.create(RONIN_SONAR_CONFIG_NAME, RoninSonarConfig::class.java).apply {
             projectKey.convention(target.name)
             projectName.convention(target.name)
-            coverageExclusions.convention(
-                listOf(
-                    "**/test/**",
-                    "**/test-utilities/**",
-                    "**/*.kts",
-                    "**/kotlin/dsl/accessors/**",
-                    "**/kotlin/test/**"
-                )
-            )
-            xmlReportPath.convention("reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml")
+            coverageExclusions.convention(coverageExclusions)
+            xmlReportPath.convention(DEFAULT_XML_REPORT_LOCATION)
         }
 
         target.afterEvaluate {
@@ -57,43 +137,21 @@ class RootConventionsPlugin : Plugin<Project> {
                 }
             }
         }
+    }
 
-        @Suppress("UnstableApiUsage")
-        target.extensions.getByType(ReportingExtension::class.java).apply {
-            reports.apply {
-                create("testCodeCoverageReport", JacocoCoverageReport::class.java).apply {
-                    reportTask.get().apply {
-                        executionData.setFrom(
-                            meaningfulSubProjects.map { subproject ->
-                                subproject.fileTree(subproject.buildDir).include("/jacoco/*.exec")
-                            }
-                        )
-                        classDirectories.setFrom(
-                            meaningfulSubProjects.map { subproject ->
-                                subproject.fileTree(subproject.buildDir.resolve("classes")).exclude("**/kotlin/dsl/accessors/**", "**/kotlin/test/**")
-                            }
-                        )
-                    }
-                    testType.set(TestSuiteType.UNIT_TEST)
+    private fun applyOtherPlugins(target: Project, isAggregationProject: Boolean) {
+        target
+            .applyPlugin(BaseGradlePluginIdentifiers.base)
+            .run {
+                if (isAggregationProject) {
+                    applyPlugin(BaseGradlePluginIdentifiers.jacocoReportAggregation)
+                } else {
+                    applyPlugin(BaseGradlePluginIdentifiers.jacoco)
                 }
             }
-        }
-
-        target.tasks.getByName("testCodeCoverageReport") { testCodeCoverageReport ->
-            meaningfulSubProjects.forEach { subProject ->
-                testCodeCoverageReport.dependsOnTasksByType(Test::class.java, subProject)
-            }
-        }
-        target.tasks.getByName("sonar").dependsOn("testCodeCoverageReport")
-
-        target.subprojects.forEach { subProject ->
-            if (subProject.childProjects.isNotEmpty()) {
-                subProject.tasks.whenTaskAdded { task ->
-                    if (task.name == "dokkaHtmlMultiModule") {
-                        task.enabled = false
-                    }
-                }
-            }
-        }
+            .applyPlugin(DependencyHelper.Plugins.sonar.id)
+            .applyPlugin(DependencyHelper.Plugins.ktlint.id)
+            .applyPlugin(DependencyHelper.Plugins.dokka.id)
+            .applyPlugin(DependencyHelper.Plugins.releasehub.id)
     }
 }
