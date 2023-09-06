@@ -169,14 +169,13 @@ class RootConventionsPluginFunctionalTest : AbstractFunctionalTest() {
         }
 
         val sonarResult = runProjectBuild(
-            listOf("sonar", "--stacktrace", "--dry-run", "-Dmaven.repo.local=$m2RepositoryDir")
+            listOf("sonar", "--stacktrace", "-Dmaven.repo.local=$m2RepositoryDir"),
+            env = mapOf("SONAR_HOST_URL" to "http://localhost:33983"),
+            fail = true
         )
 
-        assertThat(sonarResult.output).contains(
-            ":test SKIPPED\n" +
-                ":jacocoTestReport SKIPPED\n" +
-                ":sonar SKIPPED\n"
-        )
+        assertThat(sonarResult.output).contains("> Task :test\n> Task :jacocoTestReport")
+        assertThat(sonarResult.output).contains("Unable to execute SonarScanner analysis")
     }
 
     private fun verifySubProject(path: File, expectedArtifactId: String, expectedVersion: String? = null) {

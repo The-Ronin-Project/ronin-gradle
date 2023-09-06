@@ -25,7 +25,7 @@ class RootConventionsPlugin : Plugin<Project> {
         private const val SONAR_TASK_NAME = "sonar"
         private const val SINGLE_REPORT_TASK_NAME = "jacocoTestReport"
         private const val AGGREGATED_REPORT_TASK_NAME = "testCodeCoverageReport"
-        private val coverageExclusions: List<String> = listOf(
+        private val COVERAGE_EXCLUSIONS: List<String> = listOf(
             "**/test/**",
             "**/test-utilities/**",
             "**/*.kts",
@@ -69,7 +69,7 @@ class RootConventionsPlugin : Plugin<Project> {
                     reports.xml.outputLocation.set(target.layout.buildDirectory.file(roninSonarConfig.xmlReportPath.get()))
                     executionData.setFrom(target.fileTree(target.buildDir).include(jacocoIncludes))
                     classDirectories.setFrom(
-                        target.fileTree(target.buildDir.resolve(CLASS_DIR_NAME)).exclude(coverageExclusions)
+                        target.fileTree(target.buildDir.resolve(CLASS_DIR_NAME)).exclude(COVERAGE_EXCLUSIONS)
                     )
                 }
                 dependsOnTasksByType(Test::class.java, target)
@@ -91,7 +91,7 @@ class RootConventionsPlugin : Plugin<Project> {
                         )
                         classDirectories.setFrom(
                             meaningfulSubProjects.map { subproject ->
-                                subproject.fileTree(subproject.buildDir.resolve(CLASS_DIR_NAME)).exclude(coverageExclusions)
+                                subproject.fileTree(subproject.buildDir.resolve(CLASS_DIR_NAME)).exclude(COVERAGE_EXCLUSIONS)
                             }
                         )
                     }
@@ -122,7 +122,7 @@ class RootConventionsPlugin : Plugin<Project> {
         target.extensions.create(RONIN_SONAR_CONFIG_NAME, RoninSonarConfig::class.java).apply {
             projectKey.convention(target.name)
             projectName.convention(target.name)
-            coverageExclusions.convention(coverageExclusions)
+            coverageExclusions.convention(COVERAGE_EXCLUSIONS)
             xmlReportPath.convention(DEFAULT_XML_REPORT_LOCATION)
         }
 
