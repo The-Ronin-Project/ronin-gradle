@@ -62,15 +62,18 @@ fun generateSources(parameters: OpenApiKotlinGeneratorParameters) {
                                      * interactions are likely to be exchange-based for the foreseeable future, the
                                      * streaming variant is the opt-in feature. */
                                     .replace(
-                                        Regex(": ResponseEntity<List<([^>]*)>>"),
+                                        Regex(":(\\s*)ResponseEntity<List<([^>]*)>>", RegexOption.MULTILINE),
                                         if (supplementalConfiguration.controllerReactiveStreamTypes) {
-                                            ": Publisher<$1>"
+                                            ":$1Publisher<$2>"
                                         } else {
-                                            ": Publisher<List<$1>>"
+                                            ":$1Publisher<List<$2>>"
                                         }
                                     )
                                     // The order of these replaces is important
-                                    .replace(Regex(": ResponseEntity<([^>]*)>"), ": Publisher<$1>")
+                                    .replace(
+                                        Regex(":(\\s*)ResponseEntity<([^>]*)>", RegexOption.MULTILINE),
+                                        ":$1Publisher<$2>"
+                                    )
                             } else {
                                 it
                             }

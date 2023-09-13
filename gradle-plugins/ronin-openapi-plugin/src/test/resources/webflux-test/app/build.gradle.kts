@@ -63,10 +63,7 @@ configure<OpenApiKotlinGeneratorExtension> {
             inputFile.set(layout.projectDirectory.file("src/main/resources/openapi/api.yaml"))
 
             supplementalConfiguration.set(
-                SupplementalConfiguration(
-                    controllerReactiveTypes = true,
-                    controllerReactiveStreamTypes = true
-                )
+                SupplementalConfiguration(true, true)
             )
         }
     )
