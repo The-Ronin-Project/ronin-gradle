@@ -70,16 +70,12 @@ interface OpenApiKotlinGeneratorParameters : WorkParameters {
 data class SupplementalConfiguration(
     /**
      * Generate controllers with Webflux-friendly return types.
-     *
-     * e.g. `ResponseEntity<List<T>>` becomes `Publisher<List<T>>`
      */
     @get:Input
     var controllerReactiveTypes: Boolean = false,
 
     /**
      * Generate controllers with Webflux-friendly streaming return types.
-     *
-     * e.g. `ResponseEntity<List<T>>` becomes `Publisher<T>`
      */
     @get:Input
     var controllerReactiveStreamTypes: Boolean = false

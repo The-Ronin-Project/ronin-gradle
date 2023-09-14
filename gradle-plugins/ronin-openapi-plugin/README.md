@@ -86,6 +86,17 @@ Task outputs should be automatically included in your kotlin compile.
 Optional, additional configuration intended to bridge gaps where project requirements extend beyond the current feature
 sets of the underlying libraries.
 
+#### The current options are as follows:
+* **controllerReactiveTypes**:
+  * Generate controllers with Webflux-friendly return types.<br>
+   e.g.`ResponseEntity<List<T>>` becomes `Publisher<List<T>>`
+
+
+* **controllerReactiveStreamTypes**:
+  * Generate controllers with Webflux-friendly streaming return types.<br>
+  e.g.`ResponseEntity<List<T>>` becomes `Publisher<T>`
+
+
 ```kotlin
 import com.projectronin.openapi.shared.SupplementalConfiguration
 
