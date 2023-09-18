@@ -287,7 +287,7 @@ class RestContractSupportPlugin : Plugin<Project> {
 
     private fun defaultPackageName(project: Project): String = "com.projectronin.rest.${project.name.lowercase().replace("[^a-z]|contract|messaging|openapi|rest}".toRegex(), "")}"
     private fun versionInfix(project: Project): String = "v${project.version.toString().replace("^([0-9]+)\\..+".toRegex(), "$1")}"
-    private fun fullPackageName(settings: RestContractSupportExtension, project: Project): String = "${settings.packageName.get()}.${versionInfix(project)}"
+    private fun fullPackageName(settings: RestContractSupportExtension, project: Project): Provider<String> = settings.packageName.map { configuredName -> "$configuredName.${versionInfix(project)}" }
     private fun artifactId(project: Project): String = "${project.name}-${versionInfix(project)}"
     private fun rootOutputDir(project: Project): Provider<Directory> = project.layout.buildDirectory.dir("generated/resources/openapi")
     private fun extendedOutputDir(project: Project): Provider<Directory> = rootOutputDir(project).map { it.dir("META-INF/resources/${versionInfix(project)}") }

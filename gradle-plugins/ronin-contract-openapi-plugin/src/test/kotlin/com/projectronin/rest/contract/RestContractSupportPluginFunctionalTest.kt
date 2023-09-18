@@ -28,6 +28,25 @@ class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
     }
 
     @Test
+    fun `building the API works with a different package name`() {
+        basicBuildTest(
+            "1.4.7",
+            "v1",
+            packageName = "com.foo.questionnaire"
+        ) {
+            defaultExtraStuffToDo(it)
+            projectDir.resolve("build.gradle.kts").appendText(
+                """
+                    restContractSupport {
+                        packageName.set("com.foo.questionnaire")
+                    }
+                    
+                """.trimIndent()
+            )
+        }
+    }
+
+    @Test
     fun `building the API works for v2`() {
         basicBuildTest(
             "2.0.0-SNAPSHOT",
@@ -177,6 +196,7 @@ class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
     private fun basicBuildTest(
         semver: String,
         shortVersion: String,
+        packageName: String = "com.projectronin.rest.questionnaire",
         extraStuffToDo: (Git) -> Unit = { defaultExtraStuffToDo(it) }
     ) {
         val result = testRemotePublish(
@@ -189,6 +209,8 @@ class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
             ),
             extraStuffToDo = extraStuffToDo
         )
+
+        val packageDir = packageName.replace(".", "/")
 
         assertThat(result.output).contains("No results with a severity of 'warn' or higher found!")
 
@@ -225,18 +247,18 @@ class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
         assertThat(projectDir.resolve("src/main/openapi/.dependencies/contract-rest-clinical-data")).exists()
         assertThat(projectDir.resolve("src/main/openapi/.dependencies/contract-rest-clinical-data/contract-rest-clinical-data.json")).exists()
 
-        assertThat(projectDir.resolve("build/generated/sources/openapi/com/projectronin/rest/questionnaire/$shortVersion/models").listFiles()!!.map { it.name })
+        assertThat(projectDir.resolve("build/generated/sources/openapi/$packageDir/$shortVersion/models").listFiles()!!.map { it.name })
             .containsExactlyInAnyOrder(
                 *expectedModelFiles()
             )
-        assertThat(projectDir.resolve("build/generated/sources/openapi/com/projectronin/rest/questionnaire/$shortVersion/controllers").listFiles()!!.map { it.name })
+        assertThat(projectDir.resolve("build/generated/sources/openapi/$packageDir/$shortVersion/controllers").listFiles()!!.map { it.name })
             .containsExactlyInAnyOrder(
                 *expectedControllerFiles()
             )
 
         assertThat(
             jar.entries().asSequence()
-                .filter { it.name.matches("com/projectronin/rest/questionnaire/$shortVersion/models/.*class".toRegex()) }
+                .filter { it.name.matches("$packageDir/$shortVersion/models/.*class".toRegex()) }
                 .map { it.name.replace(".*/".toRegex(), "") }
                 .toList()
         ).containsExactlyInAnyOrder(
@@ -244,7 +266,7 @@ class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
         )
         assertThat(
             jar.entries().asSequence()
-                .filter { it.name.matches("com/projectronin/rest/questionnaire/$shortVersion/controllers/.*class".toRegex()) }
+                .filter { it.name.matches("$packageDir/$shortVersion/controllers/.*class".toRegex()) }
                 .map { it.name.replace(".*/".toRegex(), "") }
                 .toList()
         ).containsExactlyInAnyOrder(
@@ -258,7 +280,7 @@ class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
 
         assertThat(
             sourcesJar.entries().asSequence()
-                .filter { it.name.matches("com/projectronin/rest/questionnaire/$shortVersion/models/.*kt".toRegex()) }
+                .filter { it.name.matches("$packageDir/$shortVersion/models/.*kt".toRegex()) }
                 .map { it.name.replace(".*/".toRegex(), "") }
                 .toList()
         ).containsExactlyInAnyOrder(
@@ -266,7 +288,7 @@ class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
         )
         assertThat(
             sourcesJar.entries().asSequence()
-                .filter { it.name.matches("com/projectronin/rest/questionnaire/$shortVersion/controllers/.*kt".toRegex()) }
+                .filter { it.name.matches("$packageDir/$shortVersion/controllers/.*kt".toRegex()) }
                 .map { it.name.replace(".*/".toRegex(), "") }
                 .toList()
         ).containsExactlyInAnyOrder(

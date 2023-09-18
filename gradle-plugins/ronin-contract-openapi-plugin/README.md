@@ -271,6 +271,10 @@ jobs:
   build_and_test:
     runs-on: self-hosted
     steps:
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
       - name: test and build
         uses: projectronin/github/.github/actions/json-contract-cicd-gradle@json_contract_cicd_gradle/v1
         with:
