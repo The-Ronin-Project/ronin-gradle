@@ -29,6 +29,13 @@ class CatalogConventionsPluginFunctionalTest : AbstractFunctionalTest() {
                 """.trimIndent()
             )
             copyResourceDir("projects/demo", projectDir)
+            projectDir.resolve("catalog/build.gradle.kts").appendText(
+                """
+                    roninCatalog {
+                       bundleNameMap.set(mapOf("a-bundle" to listOf("jackson-annotations", "ronin-common-subproject-03")))
+                    }
+                """.trimIndent()
+            )
         }
         assertThat(result.output).contains("BUILD SUCCESSFUL")
         assertThat(projectDir.resolve("catalog/build/version-catalog/libs.versions.toml")).exists()
@@ -42,6 +49,12 @@ class CatalogConventionsPluginFunctionalTest : AbstractFunctionalTest() {
         assertThat(toml).contains("""ronin-common-subproject-01 = {group = "com.projectronin.plugins", name = "subproject-01", version.ref = "ronin-common" }""")
         assertThat(toml).contains("""ronin-common-subproject-03 = {group = "com.projectronin.plugins", name = "subproject-03", version.ref = "ronin-common" }""")
         assertThat(toml).contains("""jackson-annotations = {group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "jackson" }""")
+
+        assertThat(toml).contains(
+            """[bundles]
+            |a-bundle = ["jackson-annotations", "ronin-common-subproject-03"]
+            """.trimMargin()
+        )
 
         assertThat(toml).contains("""ronin-common-test-hello-jim = {id = "com.projectronin.test.hello-jim", version.ref = "ronin-common" }""")
         assertThat(toml).contains("""ronin-common-test-hello-world = {id = "com.projectronin.test.hello-world", version.ref = "ronin-common" }""")
@@ -76,6 +89,7 @@ class CatalogConventionsPluginFunctionalTest : AbstractFunctionalTest() {
                        includeCatalogFile.set(false)
                        pluginNameMap.set(mapOf("com.projectronin.test.hello-jim" to "hi"))
                        libraryNameMap.set(mapOf(":empty-middle:subproject-01" to "project1"))
+                       bundleNameMap.set(mapOf("a-bundle" to listOf("project1", "ronin-subproject-03")))
                     }
                 """.trimIndent()
             )
@@ -92,6 +106,12 @@ class CatalogConventionsPluginFunctionalTest : AbstractFunctionalTest() {
         assertThat(toml).contains("""project1 = {group = "com.projectronin.plugins", name = "subproject-01", version.ref = "ronin" }""")
         assertThat(toml).contains("""ronin-subproject-03 = {group = "com.projectronin.plugins", name = "subproject-03", version.ref = "ronin" }""")
         assertThat(toml).doesNotContain("""jackson-annotations = {group = "com.fasterxml.jackson.core", name = "jackson-annotations", version.ref = "jackson" }""")
+
+        assertThat(toml).contains(
+            """[bundles]
+            |a-bundle = ["project1", "ronin-subproject-03"]
+            """.trimMargin()
+        )
 
         assertThat(toml).contains("""hi = {id = "com.projectronin.test.hello-jim", version.ref = "ronin" }""")
         assertThat(toml).contains("""ronin-test-hello-world = {id = "com.projectronin.test.hello-world", version.ref = "ronin" }""")

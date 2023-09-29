@@ -3,6 +3,7 @@ package com.projectronin.buildconventions
 import com.projectronin.gradle.helpers.BaseGradlePluginIdentifiers
 import com.projectronin.gradle.helpers.applyPlugin
 import com.projectronin.gradle.helpers.dependsOnTasksByType
+import com.projectronin.gradle.helpers.maybeServiceVersion
 import com.projectronin.gradle.helpers.projectDependency
 import com.projectronin.roninbuildconventionsroot.DependencyHelper
 import org.gradle.api.Plugin
@@ -134,6 +135,14 @@ class RootConventionsPlugin : Plugin<Project> {
                     it.property("sonar.projectName", roninSonarConfig.projectName.get())
                     it.property("sonar.coverage.exclusions", roninSonarConfig.coverageExclusions.get())
                     it.property("sonar.coverage.jacoco.xmlReportPaths", target.layout.buildDirectory.file(roninSonarConfig.xmlReportPath.get()).get())
+                    if (roninSonarConfig.referenceBranch.isPresent) {
+                        it.property("sonar.newCode.referenceBranch", roninSonarConfig.referenceBranch.get())
+                    }
+                    if (target.version == Project.DEFAULT_VERSION) {
+                        target.maybeServiceVersion()?.let { sv ->
+                            it.property("sonar.projectVersion", sv)
+                        }
+                    }
                 }
             }
         }

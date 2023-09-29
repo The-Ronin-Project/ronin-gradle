@@ -27,3 +27,13 @@ This plugin applies the following defaults to your root project:
 - ktlint
 - dokka multi-module aggregation
 - releasehub dependency version checking
+
+## Configuration
+
+You can configure some behavior of the sonar plugin.  E.g:
+
+```kotlin
+roninSonarConfig {
+    
+}
+```

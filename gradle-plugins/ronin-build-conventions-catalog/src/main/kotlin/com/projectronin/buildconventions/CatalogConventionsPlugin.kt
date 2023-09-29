@@ -70,6 +70,10 @@ class CatalogConventionsPlugin : Plugin<Project> {
                                 val name = roninCatalog.libraryNameMap.get()[it.path] ?: "$sanitizedRootName${it.name.sanitizeName()}"
                                 library(name, it.group.toString(), it.name).versionRef(versionRef)
                             }
+
+                        roninCatalog.bundleNameMap.getOrElse(emptyMap()).forEach { (bundleName, bundleEntries) ->
+                            bundle(bundleName, bundleEntries)
+                        }
                     }
                 }
             }

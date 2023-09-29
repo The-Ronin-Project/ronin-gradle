@@ -54,6 +54,7 @@ fun Project.nexusPublicRepo(): String = properties.getOrDefault("nexus-public-re
 fun Project.nexusUsername(): String? = properties.getOrDefault("nexus-user", System.getenv("NEXUS_USER"))?.toString()
 fun Project.nexusPassword(): String? = properties.getOrDefault("nexus-password", System.getenv("NEXUS_TOKEN"))?.toString()
 fun Project.isNexusInsecure(): Boolean = properties.getOrDefault("nexus-insecure", "false").toString().toBoolean()
+fun Project.maybeServiceVersion(): String? = properties.getOrDefault("service-version", System.getenv("SERVICE_VERSION"))?.toString()?.takeIf { it.isNotBlank() }
 
 fun Project.registerMavenRepository(registerDefaultJavaPublication: Boolean = false): PublishingExtension {
     if (extensions.findByName(PublishingExtension.NAME) == null) {

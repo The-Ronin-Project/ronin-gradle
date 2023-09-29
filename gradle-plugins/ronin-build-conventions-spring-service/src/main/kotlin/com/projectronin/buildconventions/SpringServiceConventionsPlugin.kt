@@ -2,6 +2,7 @@ package com.projectronin.buildconventions
 
 import com.projectronin.gradle.helpers.addTaskThatDependsOnThisByName
 import com.projectronin.gradle.helpers.applyPlugin
+import com.projectronin.gradle.helpers.maybeServiceVersion
 import com.projectronin.roninbuildconventionskotlin.PluginIdentifiers
 import com.projectronin.roninbuildconventionsspringservice.DependencyHelper
 import org.eclipse.jgit.api.Git
@@ -51,9 +52,9 @@ class SpringServiceConventionsPlugin : Plugin<Project> {
                     val git = Git.open(target.rootProject.projectDir)
                     val ref = git.repository.exactRef("HEAD")
                     val reader = git.repository.newObjectReader()
-                    val description = git.describe()
+                    val description: String? = git.describe()
                         .setTags(true)
-                        .setAlways(true)
+                        .setAlways(false)
                         .setMatch("[0-9]*.[0-9]*.[0-9]*")
                         .setTarget("HEAD")
                         .call()
@@ -61,7 +62,7 @@ class SpringServiceConventionsPlugin : Plugin<Project> {
                     // note that this won't produce the same version as SERVICE_VERSION would.  But the intent is that this is only
                     // informational AND that GHAs will set SERVICE_VERSION.
                     val descriptionPattern = """^([0-9]+)\.*([0-9]+)\.*([0-9]+)(-alpha)?(?:-([0-9]+)-g.?[0-9a-fA-F]{3,})?$""".toRegex()
-                    val (lastTag: String?, commitDistance: Int?, tagBasedVersion: String?) = when (val match = descriptionPattern.find(description)) {
+                    val (lastTag: String?, commitDistance: Int?, tagBasedVersion: String?) = when (val match = description?.let { descriptionPattern.find(it) }) {
                         null -> Triple(null, null, null)
 
                         else -> {
@@ -82,7 +83,7 @@ class SpringServiceConventionsPlugin : Plugin<Project> {
                     }
 
                     val version: String =
-                        when (val serviceVersion: String? = target.properties.getOrDefault("service-version", System.getenv("SERVICE_VERSION"))?.toString()?.takeIf { it.isNotBlank() }) {
+                        when (val serviceVersion: String? = target.maybeServiceVersion()) {
                             null -> tagBasedVersion ?: "1.0.0-SNAPSHOT"
                             else -> serviceVersion
                         }

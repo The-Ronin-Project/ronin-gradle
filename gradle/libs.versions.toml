@@ -30,6 +30,8 @@ springdependencymanager = "1.1.0"
 swaggercore="2.2.15"
 swaggerparser = "2.1.16"
 testcontainers = "1.17.6"
+retry = "1.0.9"
+coroutines = "1.6.4"
 
 [libraries]
 gradle-kotlin-jvm = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -82,6 +84,11 @@ fabrikt = { module = "com.cjbooms:fabrikt", version.ref = "fabrikt" }
 jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 jakarta-validation-api = { module = "jakarta.validation:jakarta.validation-api", version.ref = "jakartavalidation" }
+kotlin-coroutines-bom = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-bom", version.ref = "coroutines" }
+kotlin-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-reactor = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactor", version.ref = "coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+kotlin-retry = { module = "com.michael-bull.kotlin-retry:kotlin-retry", version.ref = "retry" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

@@ -1,13 +1,26 @@
 package com.projectronin.buildconventions
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.michaelbull.retry.policy.binaryExponentialBackoff
+import com.github.michaelbull.retry.policy.limitAttempts
+import com.github.michaelbull.retry.policy.plus
+import com.github.michaelbull.retry.retry
 import com.projectronin.gradle.test.AbstractFunctionalTest
 import com.projectronin.roninbuildconventionsroot.PluginIdentifiers
+import kotlinx.coroutines.runBlocking
+import okhttp3.Credentials
+import okhttp3.Request
+import okhttp3.internal.EMPTY_REQUEST
 import org.assertj.core.api.Assertions.assertThat
 import org.eclipse.jgit.api.Git
 import org.junit.jupiter.api.Test
+import org.testcontainers.containers.GenericContainer
+import org.testcontainers.containers.wait.strategy.Wait
+import org.testcontainers.utility.DockerImageName
 import org.w3c.dom.Element
 import java.io.ByteArrayInputStream
 import java.io.File
+import java.time.Duration
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.xpath.XPathConstants
 import javax.xml.xpath.XPathFactory
@@ -178,6 +191,123 @@ class RootConventionsPluginFunctionalTest : AbstractFunctionalTest() {
         assertThat(sonarResult.output).contains("Unable to execute SonarScanner analysis")
     }
 
+    @Test
+    fun `should build with sonar`() {
+        val container = GenericContainer(DockerImageName.parse("sonarqube:9-community"))
+            .withEnv("SONAR_ES_BOOTSTRAP_CHECKS_DISABLE", "true")
+            .withExposedPorts(9000)
+            .waitingFor(Wait.forLogMessage(".*SonarQube is operational.*", 1))
+            .withStartupTimeout(Duration.ofMinutes(5))
+        kotlin.runCatching { container.start() }
+            .onFailure { e ->
+                println(container.logs)
+                throw e
+            }
+        try {
+            val creds = Credentials.basic("admin", "admin")
+            val token = httpClient.newCall(
+                Request.Builder()
+                    .post(EMPTY_REQUEST)
+                    .url("http://localhost:${container.getMappedPort(9000)}/api/user_tokens/generate?name=test")
+                    .header("Authorization", creds)
+                    .build()
+            )
+                .execute().use { response ->
+                    ObjectMapper().readTree(response.body!!.string())["token"].textValue()
+                }
+
+            val result = setupAndExecuteTestProject(
+                listOf("build", "sonar", "--stacktrace", "-Dsonar.login=$token", "-Dsonar.host.url=http://localhost:${container.getMappedPort(9000)}")
+            ) {
+                copyResourceDir("projects/demo", projectDir)
+            }
+
+            assertThat(result.output).contains("BUILD SUCCESSFUL")
+
+            assertThat(projectDir.resolve("build/reports/jacoco/testCodeCoverageReport/html/index.html")).exists()
+            assertThat(projectDir.resolve("build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml")).exists()
+
+            runBlocking {
+                retry(
+                    limitAttempts(5) +
+                        binaryExponentialBackoff(base = 1000, max = 10000)
+                ) {
+                    httpClient.newCall(
+                        Request.Builder()
+                            .get()
+                            .url("http://localhost:${container.getMappedPort(9000)}/api/components/show?component=change-project-name-here")
+                            .header("Authorization", creds)
+                            .build()
+                    )
+                        .execute().use { response ->
+                            assertThat(ObjectMapper().readTree(response.body!!.string())["component"]["version"].textValue()).isEqualTo("1.0.0-SNAPSHOT")
+                        }
+                }
+            }
+        } finally {
+            container.stop()
+        }
+    }
+
+    @Test
+    fun `should build with sonar and service version`() {
+        val container = GenericContainer(DockerImageName.parse("sonarqube:9-community"))
+            .withEnv("SONAR_ES_BOOTSTRAP_CHECKS_DISABLE", "true")
+            .withExposedPorts(9000)
+            .waitingFor(Wait.forLogMessage(".*SonarQube is operational.*", 1))
+            .withStartupTimeout(Duration.ofMinutes(5))
+        kotlin.runCatching { container.start() }
+            .onFailure { e ->
+                println(container.logs)
+                throw e
+            }
+        try {
+            val creds = Credentials.basic("admin", "admin")
+            val token = httpClient.newCall(
+                Request.Builder()
+                    .post(EMPTY_REQUEST)
+                    .url("http://localhost:${container.getMappedPort(9000)}/api/user_tokens/generate?name=test")
+                    .header("Authorization", creds)
+                    .build()
+            )
+                .execute().use { response ->
+                    ObjectMapper().readTree(response.body!!.string())["token"].textValue()
+                }
+
+            val result = setupAndExecuteTestProject(
+                listOf("build", "sonar", "--stacktrace", "-Dsonar.login=$token", "-Dsonar.host.url=http://localhost:${container.getMappedPort(9000)}", "-Pservice-version=7.3.9"),
+                projectSetup = ProjectSetup(prependedBuildFileText = null)
+            ) {
+                copyResourceDir("projects/demo", projectDir)
+            }
+
+            assertThat(result.output).contains("BUILD SUCCESSFUL")
+
+            assertThat(projectDir.resolve("build/reports/jacoco/testCodeCoverageReport/html/index.html")).exists()
+            assertThat(projectDir.resolve("build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml")).exists()
+
+            runBlocking {
+                retry(
+                    limitAttempts(5) +
+                        binaryExponentialBackoff(base = 1000, max = 10000)
+                ) {
+                    httpClient.newCall(
+                        Request.Builder()
+                            .get()
+                            .url("http://localhost:${container.getMappedPort(9000)}/api/components/show?component=change-project-name-here")
+                            .header("Authorization", creds)
+                            .build()
+                    )
+                        .execute().use { response ->
+                            assertThat(ObjectMapper().readTree(response.body!!.string())["component"]["version"].textValue()).isEqualTo("7.3.9")
+                        }
+                }
+            }
+        } finally {
+            container.stop()
+        }
+    }
+
     private fun verifySubProject(path: File, expectedArtifactId: String, expectedVersion: String? = null) {
         assertThat(path.resolve("build/libs/$expectedArtifactId${expectedVersion?.let { "-$it" } ?: ""}.jar")).exists()
         assertThat(path.resolve("build/jacoco/test.exec")).exists()
@@ -192,8 +322,9 @@ class RootConventionsPluginFunctionalTest : AbstractFunctionalTest() {
     }
 
     override fun defaultPluginId(): String = PluginIdentifiers.buildconventionsRoot
+    override fun defaultAdditionalBuildFileText(): String? = null
 
-    override fun defaultAdditionalBuildFileText(): String = """
+    override fun defaultPrependedBuildFileText(): String = """
         version = "1.0.0-SNAPSHOT"
     """.trimIndent()
 

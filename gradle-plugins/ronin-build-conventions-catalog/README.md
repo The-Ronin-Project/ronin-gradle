@@ -23,3 +23,15 @@ plugins {
 
 That's it.  The project should then produce a TOML catalog file which includes everything in _your_ project's catalog and all library or plugin
 outputs of your project.
+
+## Configuration
+
+You can influence what gets published in the bundle:
+
+```kotlin
+roninCatalog {
+   prefix.set("ronin")
+}
+```
+
+See com.projectronin.buildconventions.RoninCatalogExtension for more information.
