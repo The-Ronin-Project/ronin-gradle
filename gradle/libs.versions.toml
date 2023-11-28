@@ -20,14 +20,14 @@ ktlint = "11.5.0"
 mockk="1.13.5"
 node = "3.5.0"
 okhttp="4.10.0"
-openapigenerator="6.4.0"
+openapigenerator="6.6.0"
 releasehub = "4.0.0"
 schemavalidator="1.0.85"
 semver="4.3.0"
 sonarqube = "4.2.1.3168"
 springboot = "3.0.10"
 springdependencymanager = "1.1.0"
-swaggercore="2.2.15"
+swaggercore="2.2.19"
 swaggerparser = "2.1.16"
 testcontainers = "1.17.6"
 retry = "1.0.9"
@@ -68,6 +68,7 @@ kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
 kotlin-logging = { module = "io.github.microutils:kotlin-logging-jvm", version.ref = "kotlinlogging" }
 swagger-core = { module = "io.swagger.core.v3:swagger-core", version.ref = "swaggercore" }
+swagger-annotations-jakarta = { module = "io.swagger.core.v3:swagger-annotations-jakarta", version.ref = "swaggercore" }
 swagger-parser = { module = "io.swagger.parser.v3:swagger-parser", version.ref = "swaggerparser" }
 commons-codec = { module = "commons-codec:commons-codec", version.ref = "commonscodec" }
 semver = { module = "org.semver4j:semver4j", version.ref = "semver" }

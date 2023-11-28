@@ -54,6 +54,8 @@ class RestContractSupportPlugin : Plugin<Project> {
         private const val DOCS_TASK_NAME: String = "generateApiDocumentation"
         private const val CLEAN_TASK_NAME: String = "cleanApiOutput"
         private const val GENERATE_TASK_NAME: String = "generateOpenApiCode"
+        private const val GENERATE_FABRIKT_TASK_NAME: String = "generateOpenApiCodeFabrikt"
+        private const val GENERATE_OPENAPI_GENERATOR_NAME: String = "generateOpenApiCodeOpenApiGenerator"
         private const val TAR_TASK_NAME: String = "tarApi"
         private const val ARCHIVE_EXTENSION = "tar.gz"
         private const val JSON_EXTENSION = "json"
@@ -77,6 +79,8 @@ class RestContractSupportPlugin : Plugin<Project> {
         project.compileOnlyDependency(DependencyHelper.springWeb)
         project.compileOnlyDependency(DependencyHelper.springContext)
         project.compileOnlyDependency(DependencyHelper.jacksonAnnotations)
+        project.compileOnlyDependency(DependencyHelper.coroutinesCore)
+        project.compileOnlyDependency(DependencyHelper.swaggerAnnotations)
 
         val extension = project.extensions.create(EXTENSION_NAME, RestContractSupportExtension::class.java).apply {
             disableLinting.convention(false)
@@ -89,6 +93,8 @@ class RestContractSupportPlugin : Plugin<Project> {
             controllerOptions.convention(emptySet())
             modelOptions.convention(emptySet())
             clientOptions.convention(emptySet())
+            generatorType.convention(GeneratorType.FABRIKT)
+            openApiGeneratorAdditionalProperties.convention(emptyMap())
         }
 
         project.configurations.maybeCreate(API_DEPENDENCY_CONFIG_NAME)
@@ -187,7 +193,7 @@ class RestContractSupportPlugin : Plugin<Project> {
                     override val sourceSpecFile: RegularFileProperty = extension.inputFile
                     override val sourceSpecUri: Property<URI> = project.objects.property(URI::class.java)
                     override val consolidatedSpecOutputDirectory: DirectoryProperty = project.objects.directoryProperty().value(extendedOutputDir(project))
-                    override val specificationName: Property<String> = project.objects.property(String::class.java).value("${project.name}-compiled")
+                    override val specificationName: Property<String> = project.objects.property(String::class.java).value(versionInfix(project))
                     override val versionOverride: Property<String> = project.objects.property(String::class.java).value(project.version.toString())
                 })
             }
@@ -239,8 +245,81 @@ class RestContractSupportPlugin : Plugin<Project> {
     }
 
     private fun registerCodeGenerationTask(tasks: TaskContainer, extension: RestContractSupportExtension, project: Project) {
-        tasks.register(GENERATE_TASK_NAME, CodeGenerationTask::class.java) { task ->
+        tasks.register(GENERATE_FABRIKT_TASK_NAME, CodeGenerationTask::class.java) { task ->
             task.dependsOn(COMPILE_TASK_NAME)
+
+            task.onlyIf {
+                extension.generatorType.get() == GeneratorType.FABRIKT
+            }
+
+            task.consolidatedSpecInputFile.set(compiledJsonFile(project))
+            task.finalPackageName.set(fullPackageName(extension, project))
+        }
+        tasks.register(GENERATE_OPENAPI_GENERATOR_NAME, GenerateTask::class.java) { task ->
+            task.onlyIf {
+                extension.generatorType.get() == GeneratorType.OPENAPI_GENERATOR
+            }
+
+            task.logging.captureStandardOutput(LogLevel.DEBUG)
+            task.logging.captureStandardError(LogLevel.DEBUG)
+            task.generatorName.set("kotlin-spring")
+            task.inputSpec.set(compiledJsonFile(project).map { it.asFile.absolutePath })
+            task.outputDir.set(extension.generatedSourcesOutputDir.map { it.asFile.absolutePath })
+
+            task.globalProperties.put("models", "")
+            task.globalProperties.put("apis", "")
+
+            task.additionalProperties.put("documentationProvider", "none")
+            task.additionalProperties.put("gradleBuildFile", false)
+            task.additionalProperties.put("interfaceOnly", true)
+            task.additionalProperties.put("useSpringBoot3", true)
+            task.additionalProperties.put("basePackage", fullPackageName(extension, project))
+            task.additionalProperties.put("apiPackage", fullPackageName(extension, project).map { "$it.api" })
+            task.additionalProperties.put("modelPackage", fullPackageName(extension, project).map { "$it.model" })
+            task.additionalProperties.put("sourceFolder", "")
+            task.additionalProperties.put("skipDefaultInterface", true)
+            task.additionalProperties.putAll(extension.openApiGeneratorAdditionalProperties)
+
+            task.doLast(object : Action<Task> {
+                val codeOutputDir = extension.generatedSourcesOutputDir.get().asFile
+                override fun execute(t: Task) {
+                    deleteIfExists(File(project.rootDir, "openapitools.json"))
+                    deleteIfExists(codeOutputDir.resolve(".openapi-generator"))
+                    deleteIfExists(codeOutputDir.resolve("pom.xml"))
+                    deleteIfExists(codeOutputDir.resolve(".openapi-generator-ignore"))
+                    deleteIfExists(codeOutputDir.resolve("README.md"))
+                    // Just like FabriKt, the generate fails to do some things.  Spring (in some circumstances, like in integration tests) requires that
+                    // all controller-related annotations be on the _interface_ rather than the implementing class.  While it seems to work in a deployed
+                    // application, this means that `@WebMvcTest`s don't pick up the controller at all.  This hack just injects the controller annotation
+                    codeOutputDir.walk()
+                        .forEach { file ->
+                            if (file.name.endsWith(".kt")) {
+                                file.writeText(
+                                    file.readText()
+                                        .let { body ->
+                                            // it's a controller API interface but doesn't have a @Controller annotation
+                                            if (!body.contains("@Controller") && body.contains("@RequestMapping")) {
+                                                body
+                                                    .replace(
+                                                        "import org.springframework.web.bind.annotation.*",
+                                                        "import org.springframework.web.bind.annotation.*\nimport org.springframework.stereotype.Controller"
+                                                    )
+                                                    .replace(
+                                                        "interface ",
+                                                        "@Controller\ninterface "
+                                                    )
+                                            } else {
+                                                body
+                                            }
+                                        }
+                                )
+                            }
+                        }
+                }
+            })
+        }
+        tasks.register(GENERATE_TASK_NAME, Task::class.java) { task ->
+            task.dependsOn(COMPILE_TASK_NAME, GENERATE_FABRIKT_TASK_NAME, GENERATE_OPENAPI_GENERATOR_NAME)
             task.addTaskThatDependsOnThisByName("compileKotlin")
             task.addTaskThatDependsOnThisByName("processResources")
             task.addTaskThatDependsOnThisByName("runKtlintCheckOverMainSourceSet")
@@ -248,8 +327,6 @@ class RestContractSupportPlugin : Plugin<Project> {
             task.onlyIf {
                 extension.generateClient.getOrElse(false) || extension.generateModel.getOrElse(true) || extension.generateController.getOrElse(true)
             }
-            task.consolidatedSpecInputFile.set(compiledJsonFile(project))
-            task.finalPackageName.set(fullPackageName(extension, project))
             (project.properties["sourceSets"] as SourceSetContainer?)?.getByName("main")?.java?.srcDir(extension.generatedSourcesOutputDir)
         }
     }
@@ -290,8 +367,8 @@ class RestContractSupportPlugin : Plugin<Project> {
     private fun fullPackageName(settings: RestContractSupportExtension, project: Project): Provider<String> = settings.packageName.map { configuredName -> "$configuredName.${versionInfix(project)}" }
     private fun artifactId(project: Project): String = "${project.name}-${versionInfix(project)}"
     private fun rootOutputDir(project: Project): Provider<Directory> = project.layout.buildDirectory.dir("generated/resources/openapi")
-    private fun extendedOutputDir(project: Project): Provider<Directory> = rootOutputDir(project).map { it.dir("META-INF/resources/${versionInfix(project)}") }
-    private fun compiledJsonFile(project: Project): Provider<RegularFile> = extendedOutputDir(project).map { it.file("${project.name}-compiled.json") }
-    private fun compiledYamlFile(project: Project): Provider<RegularFile> = extendedOutputDir(project).map { it.file("${project.name}-compiled.yaml") }
+    private fun extendedOutputDir(project: Project): Provider<Directory> = rootOutputDir(project).map { it.dir("static/v3/api-docs/${project.name}") }
+    private fun compiledJsonFile(project: Project): Provider<RegularFile> = extendedOutputDir(project).map { it.file("${versionInfix(project)}.json") }
+    private fun compiledYamlFile(project: Project): Provider<RegularFile> = extendedOutputDir(project).map { it.file("${versionInfix(project)}.yaml") }
     private fun documentsOutputDir(project: Project): Provider<Directory> = project.layout.buildDirectory.dir("openapidocs")
 }

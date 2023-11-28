@@ -11,6 +11,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.eclipse.jgit.api.Git
 import org.junit.jupiter.api.Test
 import java.io.File
+import java.util.UUID
 import java.util.jar.JarFile
 
 /**
@@ -142,6 +143,164 @@ class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
         assertThat(projectDir.resolve("src/main/openapi/.dependencies")).doesNotExist()
     }
 
+    @Test
+    fun `works using openapi-generator`() {
+        basicBuildTest(
+            "1.4.7",
+            "v1",
+            packageName = "com.foo.questionnaire",
+            modelPackageSuffix = "model",
+            controllerPackageSuffix = "api",
+            expectedModelFiles = arrayOf(
+                "AbstractQuestionGroup.kt",
+                "AbstractQuestionnaire.kt",
+                "AbstractQuestionnaireAssignment.kt",
+                "AbstractResponse.kt",
+                "Action.kt",
+                "ActionType.kt",
+                "AlertTier.kt",
+                "Answer.kt",
+                "AnswerDefinition.kt",
+                "AnswerDefinitionIdentifier.kt",
+                "AnswerSubmission.kt",
+                "AnswerSummary.kt",
+                "AssignmentRequestContext.kt",
+                "CreatePatientRequestBody.kt",
+                "EndQuestionGroupAction.kt",
+                "ErrorResponse.kt",
+                "ErrorResponseAllOf.kt",
+                "ErrorResponseAllOfError.kt",
+                "FreeTextAnswer.kt",
+                "FreeTextAnswerAllOf.kt",
+                "JumpToQuestionAction.kt",
+                "JumpToQuestionActionAllOf.kt",
+                "MultipleChoiceAnswer.kt",
+                "MultipleChoiceAnswerAllOf.kt",
+                "NextQuestionAction.kt",
+                "NumericRangeAnswer.kt",
+                "NumericRangeAnswerAllOf.kt",
+                "PatientTelecom.kt",
+                "PeriodDetail.kt",
+                "Question.kt",
+                "QuestionGroup.kt",
+                "QuestionGroupAllOf.kt",
+                "QuestionGroupIdentifier.kt",
+                "QuestionGroupState.kt",
+                "QuestionGroupStateAllOf.kt",
+                "QuestionGroupSummary.kt",
+                "QuestionGroupSummaryDetail.kt",
+                "QuestionGroupSummaryDetailAllOf.kt",
+                "QuestionIdentifier.kt",
+                "QuestionInputType.kt",
+                "Questionnaire.kt",
+                "QuestionnaireAllOf.kt",
+                "QuestionnaireAssignment.kt",
+                "QuestionnaireAssignmentAllOf.kt",
+                "QuestionnaireAssignmentResponse.kt",
+                "QuestionnaireAssignmentResponseAllOf.kt",
+                "QuestionnaireAssignmentState.kt",
+                "QuestionnaireAssignmentStateAllOf.kt",
+                "QuestionnaireAssignmentStateResponse.kt",
+                "QuestionnaireAssignmentStateResponseAllOf.kt",
+                "QuestionnaireState.kt",
+                "QuestionnaireStateAllOf.kt",
+                "QuestionnaireSummary.kt",
+                "QuestionnaireSummaryResponse.kt",
+                "QuestionnaireSummaryResponseAllOf.kt",
+                "QuestionState.kt",
+                "RequiredTags.kt",
+                "ResponseType.kt",
+                "SingleChoiceAnswer.kt",
+                "SingleChoiceAnswerAllOf.kt",
+                "SummaryPeriodType.kt"
+            ),
+            expectedModelClasses = arrayOf(
+                "AbstractQuestionGroup.class",
+                "AbstractQuestionnaire.class",
+                "AbstractQuestionnaireAssignment.class",
+                "AbstractResponse.class",
+                "Action.class",
+                "ActionType.class",
+                "AlertTier.class",
+                "Answer.class",
+                "AnswerDefinition.class",
+                "AnswerDefinitionIdentifier.class",
+                "AnswerSubmission.class",
+                "AnswerSummary.class",
+                "AssignmentRequestContext.class",
+                "CreatePatientRequestBody.class",
+                "EndQuestionGroupAction.class",
+                "ErrorResponse.class",
+                "ErrorResponseAllOf.class",
+                "ErrorResponseAllOfError.class",
+                "FreeTextAnswer.class",
+                "FreeTextAnswerAllOf.class",
+                "JumpToQuestionAction.class",
+                "JumpToQuestionActionAllOf.class",
+                "MultipleChoiceAnswer.class",
+                "MultipleChoiceAnswerAllOf.class",
+                "NextQuestionAction.class",
+                "NumericRangeAnswer.class",
+                "NumericRangeAnswerAllOf.class",
+                "PatientTelecom.class",
+                "PeriodDetail.class",
+                "Question.class",
+                "QuestionGroup.class",
+                "QuestionGroupAllOf.class",
+                "QuestionGroupIdentifier.class",
+                "QuestionGroupState.class",
+                "QuestionGroupStateAllOf.class",
+                "QuestionGroupSummary.class",
+                "QuestionGroupSummaryDetail.class",
+                "QuestionGroupSummaryDetailAllOf.class",
+                "QuestionIdentifier.class",
+                "QuestionInputType.class",
+                "Questionnaire.class",
+                "QuestionnaireAllOf.class",
+                "QuestionnaireAssignment.class",
+                "QuestionnaireAssignmentAllOf.class",
+                "QuestionnaireAssignmentResponse.class",
+                "QuestionnaireAssignmentResponseAllOf.class",
+                "QuestionnaireAssignmentState.class",
+                "QuestionnaireAssignmentStateAllOf.class",
+                "QuestionnaireAssignmentStateResponse.class",
+                "QuestionnaireAssignmentStateResponseAllOf.class",
+                "QuestionnaireState.class",
+                "QuestionnaireStateAllOf.class",
+                "QuestionnaireSummary.class",
+                "QuestionnaireSummaryResponse.class",
+                "QuestionnaireSummaryResponseAllOf.class",
+                "QuestionState.class",
+                "RequiredTags.class",
+                "RequiredTags\$Operator.class",
+                "ResponseType.class",
+                "SingleChoiceAnswer.class",
+                "SingleChoiceAnswerAllOf.class",
+                "SummaryPeriodType.class"
+            ),
+            expectedControllerFiles = arrayOf("QuestionnaireApi.kt", "SummaryApi.kt"),
+            expectedControllerClasses = arrayOf("QuestionnaireApi.class", "SummaryApi.class"),
+            extraVerifiers = {
+                val fileText = projectDir.resolve("build/generated/sources/openapi/com/foo/questionnaire/v1/api/QuestionnaireApi.kt").readText()
+                assertThat(fileText.contains("suspend fun"))
+                assertThat(fileText.contains("import org.springframework.stereotype.Controller"))
+                assertThat(fileText.contains("@Controller\ninterface "))
+            }
+        ) {
+            defaultExtraStuffToDo(it)
+            projectDir.resolve("build.gradle.kts").appendText(
+                """
+                restContractSupport {
+                    packageName.set("com.foo.questionnaire")
+                    generatorType.set(com.projectronin.rest.contract.GeneratorType.OPENAPI_GENERATOR)
+                    openApiGeneratorAdditionalProperties.put("reactive", true)
+                }
+                
+                """.trimIndent()
+            )
+        }
+    }
+
     private fun mapperForFile(file: File): ObjectMapper = if (file.name.endsWith(".json")) jsonMapper else yamlMapper
 
     private fun File.setVersion(version: String) {
@@ -197,103 +356,124 @@ class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
         semver: String,
         shortVersion: String,
         packageName: String = "com.projectronin.rest.questionnaire",
+        printFileTree: Boolean = false,
+        expectedModelFiles: Array<String> = expectedModelFiles(),
+        expectedControllerFiles: Array<String> = expectedControllerFiles(),
+        expectedModelClasses: Array<String> = expectedModelClasses(),
+        expectedControllerClasses: Array<String> = expectedControllerClasses(),
+        modelPackageSuffix: String = "models",
+        controllerPackageSuffix: String = "controllers",
+        extraVerifiers: () -> Unit = {},
         extraStuffToDo: (Git) -> Unit = { defaultExtraStuffToDo(it) }
     ) {
-        val result = testRemotePublish(
-            listOf("build", "publish", "--stacktrace"),
-            verifications = listOf(
-                ArtifactVerification("questionnaire-$shortVersion", "com.projectronin.rest.contract", semver, "json"),
-                ArtifactVerification("questionnaire-$shortVersion", "com.projectronin.rest.contract", semver, "yaml"),
-                ArtifactVerification("questionnaire-$shortVersion", "com.projectronin.rest.contract", semver, "tar.gz"),
-                ArtifactVerification("questionnaire-$shortVersion", "com.projectronin.rest.contract", semver, "jar")
-            ),
-            extraStuffToDo = extraStuffToDo
-        )
-
-        val packageDir = packageName.replace(".", "/")
-
-        assertThat(result.output).contains("No results with a severity of 'warn' or higher found!")
-
-        assertThat(projectDir.resolve("build/generated/resources/openapi/META-INF/resources/$shortVersion/questionnaire-compiled.json")).exists()
-        assertThat(projectDir.resolve("build/generated/resources/openapi/META-INF/resources/$shortVersion/questionnaire-compiled.yaml")).exists()
-
-        val jsonTree = jsonMapper.readTree(projectDir.resolve("build/generated/resources/openapi/META-INF/resources/$shortVersion/questionnaire-compiled.json"))
-        assertThat(jsonTree["info"]["version"].textValue()).isEqualTo(semver)
-        assertThat(jsonTree["components"]["schemas"].fields().asSequence().toList().map { it.key }).containsExactlyInAnyOrder(*getExpectedSchemaElements())
-
-        val yamlTree = yamlMapper.readTree(projectDir.resolve("build/generated/resources/openapi/META-INF/resources/$shortVersion/questionnaire-compiled.yaml"))
-        assertThat(yamlTree["info"]["version"].textValue()).isEqualTo(semver)
-        assertThat(yamlTree["components"]["schemas"].fields().asSequence().toList().map { it.key }).containsExactlyInAnyOrder(*getExpectedSchemaElements())
-
-        assertThat(projectDir.resolve("build/libs/questionnaire-$semver.jar")).exists()
-        val jar = JarFile(projectDir.resolve("build/libs/questionnaire-$semver.jar"))
-        assertThat(jar.entries().asSequence().find { it.name == "META-INF/resources/$shortVersion/questionnaire-compiled.json" }).isNotNull
-        assertThat(jar.entries().asSequence().find { it.name == "META-INF/resources/$shortVersion/questionnaire-compiled.yaml" }).isNotNull
-        assertThat(projectDir.resolve("build/tar/questionnaire.tar.gz")).exists()
-        val entries = projectDir.resolve("build/tar/questionnaire.tar.gz").getArchiveEntries(true)
-        assertThat(entries).containsExactlyInAnyOrder(
-            "questionnaire-compiled.json",
-            "questionnaire-compiled.yaml",
-            "index.html"
-        )
-        assertThat(projectDir.resolve("build/openapidocs/index.html")).exists()
-        assertThat(projectDir.resolve("openapitools.json")).doesNotExist()
-
-        assertThat(result.output).contains("Task :downloadApiDependencies")
-
-        assertThat(projectDir.resolve("src/main/openapi/.dependencies")).exists()
-        assertThat((projectDir.resolve("src/main/openapi/.dependencies")).listFiles()).hasSize(1)
-
-        assertThat(projectDir.resolve("src/main/openapi/.dependencies/contract-rest-clinical-data")).exists()
-        assertThat(projectDir.resolve("src/main/openapi/.dependencies/contract-rest-clinical-data/contract-rest-clinical-data.json")).exists()
-
-        assertThat(projectDir.resolve("build/generated/sources/openapi/$packageDir/$shortVersion/models").listFiles()!!.map { it.name })
-            .containsExactlyInAnyOrder(
-                *expectedModelFiles()
-            )
-        assertThat(projectDir.resolve("build/generated/sources/openapi/$packageDir/$shortVersion/controllers").listFiles()!!.map { it.name })
-            .containsExactlyInAnyOrder(
-                *expectedControllerFiles()
+        runCatching {
+            val result = testRemotePublish(
+                listOf("build", "publish", "--stacktrace"),
+                verifications = listOf(
+                    ArtifactVerification("questionnaire-$shortVersion", "com.projectronin.rest.contract", semver, "json"),
+                    ArtifactVerification("questionnaire-$shortVersion", "com.projectronin.rest.contract", semver, "yaml"),
+                    ArtifactVerification("questionnaire-$shortVersion", "com.projectronin.rest.contract", semver, "tar.gz"),
+                    ArtifactVerification("questionnaire-$shortVersion", "com.projectronin.rest.contract", semver, "jar")
+                ),
+                extraStuffToDo = extraStuffToDo,
+                printFileTree = printFileTree
             )
 
-        assertThat(
-            jar.entries().asSequence()
-                .filter { it.name.matches("$packageDir/$shortVersion/models/.*class".toRegex()) }
-                .map { it.name.replace(".*/".toRegex(), "") }
-                .toList()
-        ).containsExactlyInAnyOrder(
-            *expectedModelClasses()
-        )
-        assertThat(
-            jar.entries().asSequence()
-                .filter { it.name.matches("$packageDir/$shortVersion/controllers/.*class".toRegex()) }
-                .map { it.name.replace(".*/".toRegex(), "") }
-                .toList()
-        ).containsExactlyInAnyOrder(
-            *expectedControllerClasses()
-        )
-        // build/libs/questionnaire-1.4.7.jar
-        // build/libs/questionnaire-1.4.7-sources.jar
-        val sourcesJar = JarFile(projectDir.resolve("build/libs/questionnaire-$semver-sources.jar"))
-        assertThat(sourcesJar.entries().asSequence().find { it.name == "META-INF/resources/$shortVersion/questionnaire-compiled.json" }).isNotNull
-        assertThat(sourcesJar.entries().asSequence().find { it.name == "META-INF/resources/$shortVersion/questionnaire-compiled.yaml" }).isNotNull
+            val packageDir = packageName.replace(".", "/")
 
-        assertThat(
-            sourcesJar.entries().asSequence()
-                .filter { it.name.matches("$packageDir/$shortVersion/models/.*kt".toRegex()) }
-                .map { it.name.replace(".*/".toRegex(), "") }
-                .toList()
-        ).containsExactlyInAnyOrder(
-            *expectedModelFiles()
-        )
-        assertThat(
-            sourcesJar.entries().asSequence()
-                .filter { it.name.matches("$packageDir/$shortVersion/controllers/.*kt".toRegex()) }
-                .map { it.name.replace(".*/".toRegex(), "") }
-                .toList()
-        ).containsExactlyInAnyOrder(
-            *expectedControllerFiles()
-        )
+            assertThat(result.output).contains("No results with a severity of 'warn' or higher found!")
+
+            assertThat(projectDir.resolve("build/generated/resources/openapi/static/v3/api-docs/questionnaire/$shortVersion.json")).exists()
+            assertThat(projectDir.resolve("build/generated/resources/openapi/static/v3/api-docs/questionnaire/$shortVersion.yaml")).exists()
+
+            val jsonTree = jsonMapper.readTree(projectDir.resolve("build/generated/resources/openapi/static/v3/api-docs/questionnaire/$shortVersion.json"))
+            assertThat(jsonTree["info"]["version"].textValue()).isEqualTo(semver)
+            assertThat(jsonTree["components"]["schemas"].fields().asSequence().toList().map { it.key }).containsExactlyInAnyOrder(*getExpectedSchemaElements())
+
+            val yamlTree = yamlMapper.readTree(projectDir.resolve("build/generated/resources/openapi/static/v3/api-docs/questionnaire/$shortVersion.yaml"))
+            assertThat(yamlTree["info"]["version"].textValue()).isEqualTo(semver)
+            assertThat(yamlTree["components"]["schemas"].fields().asSequence().toList().map { it.key }).containsExactlyInAnyOrder(*getExpectedSchemaElements())
+
+            assertThat(projectDir.resolve("build/libs/questionnaire-$semver.jar")).exists()
+            val jar = JarFile(projectDir.resolve("build/libs/questionnaire-$semver.jar"))
+            assertThat(jar.entries().asSequence().find { it.name == "static/v3/api-docs/questionnaire/$shortVersion.json" }).isNotNull
+            assertThat(jar.entries().asSequence().find { it.name == "static/v3/api-docs/questionnaire/$shortVersion.yaml" }).isNotNull
+            assertThat(projectDir.resolve("build/tar/questionnaire.tar.gz")).exists()
+            val entries = projectDir.resolve("build/tar/questionnaire.tar.gz").getArchiveEntries(true)
+            assertThat(entries).containsExactlyInAnyOrder(
+                "$shortVersion.json",
+                "$shortVersion.yaml",
+                "index.html"
+            )
+            assertThat(projectDir.resolve("build/openapidocs/index.html")).exists()
+            assertThat(projectDir.resolve("openapitools.json")).doesNotExist()
+
+            assertThat(result.output).contains("Task :downloadApiDependencies")
+
+            assertThat(projectDir.resolve("src/main/openapi/.dependencies")).exists()
+            assertThat((projectDir.resolve("src/main/openapi/.dependencies")).listFiles()).hasSize(1)
+
+            assertThat(projectDir.resolve("src/main/openapi/.dependencies/contract-rest-clinical-data")).exists()
+            assertThat(projectDir.resolve("src/main/openapi/.dependencies/contract-rest-clinical-data/contract-rest-clinical-data.json")).exists()
+
+            assertThat(projectDir.resolve("build/generated/sources/openapi/$packageDir/$shortVersion/$modelPackageSuffix").listFiles()!!.map { it.name })
+                .containsExactlyInAnyOrder(
+                    *expectedModelFiles
+                )
+            assertThat(projectDir.resolve("build/generated/sources/openapi/$packageDir/$shortVersion/$controllerPackageSuffix").listFiles()!!.map { it.name })
+                .containsExactlyInAnyOrder(
+                    *expectedControllerFiles
+                )
+
+            assertThat(
+                jar.entries().asSequence()
+                    .filter { it.name.matches("$packageDir/$shortVersion/$modelPackageSuffix/.*class".toRegex()) }
+                    .map { it.name.replace(".*/".toRegex(), "") }
+                    .toList()
+            ).containsExactlyInAnyOrder(
+                *expectedModelClasses
+            )
+            assertThat(
+                jar.entries().asSequence()
+                    .filter { it.name.matches("$packageDir/$shortVersion/$controllerPackageSuffix/.*class".toRegex()) }
+                    .map { it.name.replace(".*/".toRegex(), "") }
+                    .toList()
+            ).containsExactlyInAnyOrder(
+                *expectedControllerClasses
+            )
+            // build/libs/questionnaire-1.4.7.jar
+            // build/libs/questionnaire-1.4.7-sources.jar
+            val sourcesJar = JarFile(projectDir.resolve("build/libs/questionnaire-$semver-sources.jar"))
+            assertThat(sourcesJar.entries().asSequence().find { it.name == "static/v3/api-docs/questionnaire/$shortVersion.json" }).isNotNull
+            assertThat(sourcesJar.entries().asSequence().find { it.name == "static/v3/api-docs/questionnaire/$shortVersion.yaml" }).isNotNull
+
+            assertThat(
+                sourcesJar.entries().asSequence()
+                    .filter { it.name.matches("$packageDir/$shortVersion/$modelPackageSuffix/.*kt".toRegex()) }
+                    .map { it.name.replace(".*/".toRegex(), "") }
+                    .toList()
+            ).containsExactlyInAnyOrder(
+                *expectedModelFiles
+            )
+            assertThat(
+                sourcesJar.entries().asSequence()
+                    .filter { it.name.matches("$packageDir/$shortVersion/$controllerPackageSuffix/.*kt".toRegex()) }
+                    .map { it.name.replace(".*/".toRegex(), "") }
+                    .toList()
+            ).containsExactlyInAnyOrder(
+                *expectedControllerFiles
+            )
+            extraVerifiers()
+        }
+            .onFailure { t ->
+                runCatching {
+                    val failedTestDirectory = pluginBuildDirectory.resolve("failed-tests/${UUID.randomUUID()}")
+                    failedTestDirectory.mkdirs()
+                    logger.error { "Test failed.  Copying data to $failedTestDirectory" }
+                    projectDir.copyRecursively(failedTestDirectory)
+                }
+                throw t
+            }
     }
 
     override fun defaultExtraBuildFileText(): String {

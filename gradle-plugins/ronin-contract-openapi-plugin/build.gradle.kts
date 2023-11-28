@@ -46,7 +46,9 @@ dependencyHelper {
             "springBom" to libs.spring.boot.bom,
             "springWeb" to libs.spring.web,
             "springContext" to libs.spring.context,
-            "jacksonAnnotations" to libs.jackson.annotations
+            "jacksonAnnotations" to libs.jackson.annotations,
+            "coroutinesCore" to libs.kotlin.coroutines.core,
+            "swaggerAnnotations" to libs.swagger.annotations.jakarta
         )
     )
 }

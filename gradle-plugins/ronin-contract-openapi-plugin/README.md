@@ -22,8 +22,8 @@ more than one version of the dependency in a project).
 
 The plugin outputs five artifacts:
 - a tar.gz file that contains the compiled schemas
-- a .json copy of the schema
-- a .yaml copy of the schema
+- a .json copy of the schema at `build/generated/resources/openapi/static/v3/api-docs/<project name>/v<n>.json, included in jar`
+- a .yaml copy of the schema at `build/generated/resources/openapi/static/v3/api-docs/<project name>/v<n>.yaml, included in jar`
 - a .jar file with the compiled schema and compiled kotlin classes
 - a -sources.jar file with the source files
 
@@ -139,6 +139,17 @@ of the configuration items are required.  Specifically, you may want to configur
 ```kotlin
 restContractSupport {
     controllerOptions.add("SUSPEND_MODIFIER")
+}
+```
+
+#### Using openapi-generator instead of Fabrikt
+
+You can use something like the following to switch from the default fabrikt generator to the openapi-generator one:
+
+```kotlin
+restContractSupport {
+    generatorType.set(com.projectronin.rest.contract.GeneratorType.OPENAPI_GENERATOR)
+    openApiGeneratorAdditionalProperties.put("reactive", true)
 }
 ```
 

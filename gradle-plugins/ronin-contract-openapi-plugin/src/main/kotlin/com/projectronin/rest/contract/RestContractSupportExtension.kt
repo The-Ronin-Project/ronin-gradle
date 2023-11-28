@@ -3,6 +3,7 @@ package com.projectronin.rest.contract
 import com.projectronin.openapi.shared.SupplementalConfiguration
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.SetProperty
 
@@ -60,6 +61,20 @@ interface RestContractSupportExtension {
      * See https://github.com/cjbooms/fabrikt/blob/10.0.0/src/main/kotlin/com/cjbooms/fabrikt/cli/CodeGenOptions.kt
      */
     val clientOptions: SetProperty<String>
+
+    /**
+     * Defaults to FABRIKT.  But can switch to OPENAPI_GENERATOR, which will do quite different things.  Note that options
+     * from controllerOptions/modelOptions/clientOptions are ignored, and clients aren't generaed
+     */
+    val generatorType: Property<GeneratorType>
+
+    /**
+     * For `generatorType==OPENAPI_GENERATOR`, any additional properties.  See docs [here](https://openapi-generator.tech/docs/generators/kotlin-spring/).
+     *
+     * Ones you might want are:
+     * - `reactive=true`
+     */
+    val openApiGeneratorAdditionalProperties: MapProperty<String, Any>
 
     /**
      * Supplemental configuration is intended to bridge gaps where requirements fall outside the current feature
