@@ -11,6 +11,7 @@ dependencies {
     testImplementation(libs.assertj)
     testImplementation(gradleTestKit())
     testImplementation(project(":shared-libraries:gradle-testkit-utilities"))
+    testImplementation(libs.mockk)
 }
 
 gradlePlugin {

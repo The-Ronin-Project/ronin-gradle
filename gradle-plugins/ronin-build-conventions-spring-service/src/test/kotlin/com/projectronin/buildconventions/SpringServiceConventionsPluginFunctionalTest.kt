@@ -154,6 +154,70 @@ class SpringServiceConventionsPluginFunctionalTest : AbstractFunctionalTest() {
         assertThat(info["dirty"]?.booleanValue()).isFalse()
     }
 
+    @Test
+    fun `should build a spring webflux project`() {
+        val result = setupAndExecuteTestProject(
+            listOf("build", "--stacktrace")
+        ) {
+            buildFile.writeText(
+                """
+                group = "com.example"
+                dependencies {
+                    implementation("org.springframework.boot:spring-boot-starter-webflux")
+                    implementation("org.jetbrains.kotlin:kotlin-reflect")
+                    testImplementation("org.springframework.boot:spring-boot-starter-test")
+                }
+                plugins {
+                    id("com.projectronin.buildconventions.spring-service")
+                }
+                
+                """.trimIndent()
+            )
+            it.tag().setName("1.0.0-alpha").call()
+            copyResourceDir("projects/demo", projectDir)
+            projectDir.resolve(".gitignore").appendText("\ngradle.properties\n")
+            it.add().addFilepattern(".").call()
+            it.commit()
+                .setMessage("Added some stuff")
+                .setAuthor("Dionne Wable", "Dionne.Wable@example.org")
+                .setCommitter("Dionne Wable", "Dionne.Wable@example.org")
+                .call()
+        }
+
+        assertThat(result.tasks.first { it.path == ":bootJar" }.outcome).isEqualTo(TaskOutcome.SUCCESS)
+
+        val info = ObjectMapper().readTree(projectDir.resolve("build/generated/resources/service-info/service-info.json"))
+        assertThat(info["version"]?.textValue()).isEqualTo("1.0.0-SNAPSHOT")
+        assertThat(info["lastTag"]?.textValue()).isEqualTo("1.0.0-alpha")
+        assertThat(info["commitDistance"]?.intValue()).isEqualTo(1)
+        assertThat(info["gitHash"]?.textValue()).matches("^[a-f0-9]{3,}$")
+        assertThat(info["gitHashFull"]?.textValue()).matches("^[a-f0-9]{40}$")
+        assertThat(info["branchName"]?.textValue()).isEqualTo("main")
+        assertThat(info["dirty"]?.booleanValue()).isFalse()
+
+        assertThat(projectDir.resolve("build/libs/change-project-name-here.jar")).exists()
+        assertThat(projectDir.resolve("build/libs/change-project-name-here.jar")).exists()
+        assertThat(projectDir.resolve("build/generated/resources/service-info/service-info.json")).exists()
+
+        val jar = JarFile(projectDir.resolve("build/libs/change-project-name-here.jar"))
+        val entry = jar.entries().asSequence().find { it.name == "BOOT-INF/classes/service-info.json" }
+        assertThat(entry).isNotNull
+
+        val resolverEntry = jar.entries().asSequence().find { it.name.matches("""BOOT-INF/lib/netty-resolver-dns-[0-9.]+\.Final\.jar""".toRegex()) }
+        assertThat(resolverEntry).isNotNull
+
+        val isMacOS = System.getProperty("os.name").startsWith("Mac OS X")
+        val architecture = System.getProperty("os.arch").lowercase()
+
+        val osXResolverEntry = jar.entries().asSequence().find { it.name.matches("""BOOT-INF/lib/netty-resolver-dns-native-macos-[0-9.]+\.Final-osx-aarch_64\.jar""".toRegex()) }
+        assertThat(resolverEntry).isNotNull
+        if (isMacOS && architecture == "aarch64") {
+            assertThat(osXResolverEntry).isNotNull
+        } else {
+            assertThat(osXResolverEntry).isNull()
+        }
+    }
+
     override fun defaultPluginId(): String = PluginIdentifiers.buildconventionsSpringService
 
     override fun defaultAdditionalBuildFileText(): String = """

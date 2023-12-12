@@ -3,6 +3,7 @@ package com.projectronin.buildconventions
 import com.projectronin.gradle.helpers.addTaskThatDependsOnThisByName
 import com.projectronin.gradle.helpers.applyPlugin
 import com.projectronin.gradle.helpers.maybeServiceVersion
+import com.projectronin.gradle.helpers.runtimeOnlyDependency
 import com.projectronin.roninbuildconventionskotlin.PluginIdentifiers
 import com.projectronin.roninbuildconventionsspringservice.DependencyHelper
 import org.eclipse.jgit.api.Git
@@ -11,6 +12,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.plugins.BasePlugin
+import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.SourceSetContainer
 import org.springframework.boot.gradle.dsl.SpringBootExtension
 
@@ -33,6 +35,10 @@ class SpringServiceConventionsPlugin : Plugin<Project> {
 
         val annotationProcessor = target.configurations.maybeCreate("annotationProcessor")
         target.dependencies.add(annotationProcessor.name, DependencyHelper.springAnnotationProcessor)
+
+        target.afterEvaluate {
+            potentiallyAddOsXNettyResolver(target)
+        }
 
         target.task("generateServiceInfo") { t ->
             val outputDir = t.project.layout.buildDirectory.dir("generated/resources/service-info")
@@ -104,6 +110,25 @@ class SpringServiceConventionsPlugin : Plugin<Project> {
                     )
                 }
             })
+        }
+    }
+
+    internal fun potentiallyAddOsXNettyResolver(
+        target: Project,
+        osName: String = System.getProperty("os.name"),
+        architecture: String = System.getProperty("os.arch").lowercase()
+    ) {
+        val isMacOS = osName.startsWith("Mac OS X")
+        if (isMacOS && architecture == "aarch64") {
+            val potentialWebfluxDependencies = setOf(
+                "spring-boot-starter-webflux",
+                "spring-boot-webflux",
+                "product-spring-webflux-starter"
+            )
+            val isWebflux = target.configurations.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME).dependencies.any { potentialWebfluxDependencies.contains(it.name) }
+            if (isWebflux) {
+                target.runtimeOnlyDependency("io.netty:netty-resolver-dns-native-macos::osx-aarch_64")
+            }
         }
     }
 }
