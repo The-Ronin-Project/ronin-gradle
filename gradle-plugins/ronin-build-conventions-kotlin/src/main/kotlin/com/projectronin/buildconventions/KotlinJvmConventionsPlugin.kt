@@ -1,6 +1,7 @@
 package com.projectronin.buildconventions
 
 import com.projectronin.gradle.helpers.BaseGradlePluginIdentifiers
+import com.projectronin.gradle.helpers.SharedConstants
 import com.projectronin.gradle.helpers.applyPlugin
 import com.projectronin.gradle.helpers.dependsOnTasksByType
 import com.projectronin.gradle.helpers.testImplementationDependency
@@ -20,7 +21,7 @@ import org.gradle.testing.jacoco.tasks.JacocoReport
 import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.dokka.gradle.DokkaTaskPartial
 import org.jetbrains.dokka.gradle.GradleDokkaSourceSetBuilder
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
 import java.net.URL
@@ -38,11 +39,16 @@ class KotlinJvmConventionsPlugin : Plugin<Project> {
                     withJavadocJar()
                 }
 
+                afterEvaluate {
+                    extensions.findByType(KotlinJvmProjectExtension::class.java)?.apply {
+                        jvmToolchain(SharedConstants.globalJvmVersion)
+                    }
+                }
+
                 tasks.apply {
                     withType(KotlinCompile::class.java) { task ->
                         task.compilerOptions {
                             freeCompilerArgs.addAll(listOf("-Xjsr305=strict"))
-                            jvmTarget.set(JvmTarget.JVM_17)
                         }
                     }
 
