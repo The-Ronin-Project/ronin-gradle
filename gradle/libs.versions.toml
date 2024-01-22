@@ -44,7 +44,6 @@ gradle-spring-boot = { module = "org.springframework.boot:spring-boot-gradle-plu
 gradle-spring-depmanager = { module = "io.spring.gradle:dependency-management-plugin", version.ref = "springdependencymanager" }
 gradle-spring-kotlin-core = { module = "org.jetbrains.kotlin:kotlin-allopen", version.ref = "kotlin" }
 gradle-spring-kotlin-jpa = { module = "org.jetbrains.kotlin:kotlin-noarg", version.ref = "kotlin" }
-gradle-axion-release = { module = "pl.allegro.tech.build:axion-release-plugin", version.ref = "axion" }
 gradle-jsonschematopojo = { module = "org.jsonschema2pojo:jsonschema2pojo-gradle-plugin", version.ref = "jsonschematopojo" }
 gradle-node = { module = "com.github.node-gradle:gradle-node-plugin", version.ref = "node" }
 gradle-openapi-generator = { module = "org.openapitools:openapi-generator-gradle-plugin", version.ref = "openapigenerator" }
@@ -72,7 +71,7 @@ swagger-annotations-jakarta = { module = "io.swagger.core.v3:swagger-annotations
 swagger-parser = { module = "io.swagger.parser.v3:swagger-parser", version.ref = "swaggerparser" }
 commons-codec = { module = "commons-codec:commons-codec", version.ref = "commonscodec" }
 semver = { module = "org.semver4j:semver4j", version.ref = "semver" }
-jgit = "org.eclipse.jgit:org.eclipse.jgit:6.5.0.202303070854-r"
+jgit = "org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r"
 json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "schemavalidator" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }

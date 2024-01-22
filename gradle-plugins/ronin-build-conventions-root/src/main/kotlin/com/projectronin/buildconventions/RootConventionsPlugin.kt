@@ -3,8 +3,8 @@ package com.projectronin.buildconventions
 import com.projectronin.gradle.helpers.BaseGradlePluginIdentifiers
 import com.projectronin.gradle.helpers.applyPlugin
 import com.projectronin.gradle.helpers.dependsOnTasksByType
-import com.projectronin.gradle.helpers.maybeServiceVersion
 import com.projectronin.gradle.helpers.projectDependency
+import com.projectronin.gradle.helpers.roninProjectVersion
 import com.projectronin.roninbuildconventionsroot.DependencyHelper
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -139,9 +139,8 @@ class RootConventionsPlugin : Plugin<Project> {
                         it.property("sonar.newCode.referenceBranch", roninSonarConfig.referenceBranch.get())
                     }
                     if (target.version == Project.DEFAULT_VERSION) {
-                        target.maybeServiceVersion()?.let { sv ->
-                            it.property("sonar.projectVersion", sv)
-                        }
+                        val rpv = target.roninProjectVersion
+                        it.property("sonar.projectVersion", rpv.serviceVersion ?: rpv.tagBasedVersion)
                     }
                 }
             }

@@ -20,11 +20,26 @@ plugins {
 }
 ```
 
-Versioning takes place using the [axion release plugin](https://github.com/allegro/axion-release-plugin).  This means that if a build is done from a tag, say, `v1.0.3`, and a build is published,
-the build will use version `1.0.3`.  If commits have taken place since that tag, `x.y.z-SNAPSHOT` will be used, where `z` is the next increment.  It is expected that release tags will be created
-manually through GitHub using the 'release' feature, and that they will be called `vX.Y.Z` using the standard semver semantics.
+Versioning is done via tags.  The most recent tag in the format `vN.N.N` or `N.N.N` is considered (but please don't mix the two formats in your repository).  The plugin will consider the latest
+tag, and use these rules:
 
-To "prepare" the repo to publish a next major version, you can locally run `gradle markNextVersion -Prelease.version=X.Y.Z` and push the tag manually.
+- If the most recent tag is on the current commit, the version from the tag is used directly.  E.g. if commit `04be8081befb138aeddbfde95310392a3daec610` is current, and that commit is tagged `v3.7.0`,
+  the build will use the version 3.7.0
+- If there's been a commit since the latest tag, the build will produce a patch-level increment with a snapshot.  E.g. if the most recent tag is `v3.7.0` and there has been at least one commit since
+  then, the build will use version `3.7.1-SNAPSHOT`.
+- If the build is on a branch other than `main` or `vN` where `N` is a major version, the version used will include some version of the branch name.  E.g. if you are on branch `feature/DASH-9943-something`,
+  the build will produce a version like `3.7.1-DASH9943-SNAPSHOT`.
+
+To set the next version (e.g. to move from 1.x.y to 2.x.y or from 1.x.y to 1.y.y), tag the repository with the desired version plus `-alpha`.  E.g., if your current tag is `v3.7.0` and you
+want the next build to be `v3.8.0` not `v3.7.1`, do:
+
+```bash
+git tag v3.8.0-alpha
+git push v3.8.0-alpha
+```
+
+It is recommended you don't do this at the _same_ location as an existing release tag; do it on the first commit you want to have the new version.  It's also probably important to tag a
+commit on the main branch, rather than on your feature branch.
 
 To _revise an older version_, you will need to create a `vX` branch where `X` is the major version you want to publish, from the tag you want to revise.  E.g.:
 

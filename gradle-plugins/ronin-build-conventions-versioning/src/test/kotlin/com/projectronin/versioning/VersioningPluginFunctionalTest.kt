@@ -12,6 +12,15 @@ class VersioningPluginFunctionalTest : AbstractFunctionalTest() {
     fun `initial version works`() {
         val result = setupAndExecuteTestProject(listOf("currentVersion", "--stacktrace"))
         assertThat(result.output).contains("Project version: 1.0.0-SNAPSHOT\n")
+        assertThat(result.output).contains("Setting project version to '1.0.0-SNAPSHOT'")
+    }
+
+    @Test
+    fun `quiet works`() {
+        val result = setupAndExecuteTestProject(listOf("currentVersion", "--stacktrace", "-Prelease.quiet"))
+        assertThat(result.output).contains("1.0.0-SNAPSHOT")
+        assertThat(result.output).doesNotContain("Project version: 1.0.0-SNAPSHOT\n")
+        assertThat(result.output).doesNotContain("Setting project version to '1.0.0-SNAPSHOT'")
     }
 
     @Test
@@ -68,6 +77,14 @@ class VersioningPluginFunctionalTest : AbstractFunctionalTest() {
             git.tag().setName("v1.0.0").call()
         }
         assertThat(result.output).contains("Project version: 1.0.0\n")
+    }
+
+    @Test
+    fun `tag works even if not prefixed`() {
+        val result = setupAndExecuteTestProject(listOf("currentVersion", "--stacktrace")) { git ->
+            git.tag().setName("2.3.1").call()
+        }
+        assertThat(result.output).contains("Project version: 2.3.1\n")
     }
 
     @Test

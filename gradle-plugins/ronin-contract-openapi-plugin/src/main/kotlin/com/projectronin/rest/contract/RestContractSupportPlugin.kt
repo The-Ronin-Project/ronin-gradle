@@ -9,21 +9,16 @@ import com.projectronin.gradle.helpers.applyPlugin
 import com.projectronin.gradle.helpers.compileOnlyDependency
 import com.projectronin.gradle.helpers.platformDependency
 import com.projectronin.gradle.helpers.registerMavenRepository
-import com.projectronin.openapi.shared.OpenApiKotlinConsolidatorParameters
-import com.projectronin.openapi.shared.consolidateSpec
 import com.projectronin.ronincontractopenapiplugin.DependencyHelper
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.file.Directory
-import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFile
-import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.plugins.BasePlugin
 import org.gradle.api.plugins.JavaPlugin
-import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.SourceSetContainer
@@ -35,7 +30,6 @@ import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.net.URI
 import com.projectronin.roninbuildconventionskotlin.PluginIdentifiers as KotlinPluginIdentifiers
 import com.projectronin.roninbuildconventionsversioning.PluginIdentifiers as VersioningPluginIdentifiers
 
@@ -85,7 +79,7 @@ class RestContractSupportPlugin : Plugin<Project> {
         val extension = project.extensions.create(EXTENSION_NAME, RestContractSupportExtension::class.java).apply {
             disableLinting.convention(false)
             inputFile.convention(project.layout.projectDirectory.file("src/main/openapi/${project.name}.json"))
-            packageName.convention(defaultPackageName(project))
+            packageName.convention(project.defaultPackageName())
             generateClient.convention(false)
             generateModel.convention(true)
             generateController.convention(true)
@@ -105,11 +99,11 @@ class RestContractSupportPlugin : Plugin<Project> {
         registerLintTask(tasks, extension, project)
         registerDownloadTask(tasks, extension, project)
         registerCompileTask(tasks, extension, project)
-        registerDocsTask(tasks, project)
+        registerDocsTask(tasks, project, extension)
         registerTarTask(tasks, project)
         registerCodeGenerationTask(tasks, extension, project)
 
-        project.afterEvaluate { registerPublications(project) }
+        project.afterEvaluate { registerPublications(project, extension) }
     }
 
     private fun registerLintTask(tasks: TaskContainer, extension: RestContractSupportExtension, project: Project) {
@@ -155,24 +149,24 @@ class RestContractSupportPlugin : Plugin<Project> {
             task.archiveFileName.set(project.provider { "${project.name}.$ARCHIVE_EXTENSION" })
             task.destinationDirectory.set(project.layout.buildDirectory.dir("tar"))
             task.from(
-                project.fileTree(extendedOutputDir(project)),
-                project.fileTree(documentsOutputDir(project))
+                project.fileTree(project.extendedOutputDir()),
+                project.fileTree(project.documentsOutputDir())
             )
             task.addTaskThatDependsOnThisByName("assemble")
         }
     }
 
-    private fun registerDocsTask(tasks: TaskContainer, project: Project) {
+    private fun registerDocsTask(tasks: TaskContainer, project: Project, extension: RestContractSupportExtension) {
         tasks.register(DOCS_TASK_NAME, GenerateTask::class.java) { task ->
             task.group = BasePlugin.BUILD_GROUP
             task.dependsOn(COMPILE_TASK_NAME)
             task.logging.captureStandardOutput(LogLevel.DEBUG)
             task.logging.captureStandardError(LogLevel.DEBUG)
             task.generatorName.set("html2")
-            task.inputSpec.set(compiledJsonFile(project).map { it.asFile.absolutePath })
-            task.outputDir.set(documentsOutputDir(project).map { it.asFile.absolutePath })
+            task.inputSpec.set(project.compiledJsonFile(extension).map { it.asFile.absolutePath })
+            task.outputDir.set(project.documentsOutputDir().map { it.asFile.absolutePath })
             task.doLast(object : Action<Task> {
-                val docsOutputDir = documentsOutputDir(project).get().asFile
+                val docsOutputDir = project.documentsOutputDir().get().asFile
                 override fun execute(t: Task) {
                     deleteIfExists(File(project.rootDir, "openapitools.json"))
                     deleteIfExists(docsOutputDir.resolve(".openapi-generator"))
@@ -184,20 +178,13 @@ class RestContractSupportPlugin : Plugin<Project> {
     }
 
     private fun registerCompileTask(tasks: TaskContainer, extension: RestContractSupportExtension, project: Project) {
-        tasks.register(COMPILE_TASK_NAME) { task ->
-            task.group = BasePlugin.BUILD_GROUP
+        tasks.register(COMPILE_TASK_NAME, SchemaCompilationTask::class.java) { task ->
             task.dependsOn(DOWNLOAD_TASK_NAME)
-            (project.properties["sourceSets"] as SourceSetContainer?)!!.getByName("main").resources.srcDir(project.layout.buildDirectory.dir("generated/resources/openapi"))
-            task.doLast {
-                consolidateSpec(object : OpenApiKotlinConsolidatorParameters {
-                    override val sourceSpecFile: RegularFileProperty = extension.inputFile
-                    override val sourceSpecUri: Property<URI> = project.objects.property(URI::class.java)
-                    override val consolidatedSpecOutputDirectory: DirectoryProperty = project.objects.directoryProperty().value(extendedOutputDir(project))
-                    override val specificationName: Property<String> = project.objects.property(String::class.java).value(versionInfix(project))
-                    override val versionOverride: Property<String> = project.objects.property(String::class.java).value(project.version.toString())
-                })
-            }
             task.addTaskThatDependsOnThisByName("processResources")
+            task.sourceSpecFile.set(extension.inputFile)
+            task.consolidatedSpecOutputDirectory.set(project.extendedOutputDir())
+            task.specificationName.set(project.versionInfix(extension))
+            task.versionOverride.set(project.extendedProjectVersion(extension))
         }
     }
 
@@ -252,18 +239,19 @@ class RestContractSupportPlugin : Plugin<Project> {
                 extension.generatorType.get() == GeneratorType.FABRIKT
             }
 
-            task.consolidatedSpecInputFile.set(compiledJsonFile(project))
-            task.finalPackageName.set(fullPackageName(extension, project))
+            task.consolidatedSpecInputFile.set(project.compiledJsonFile(extension))
+            task.finalPackageName.set(project.fullPackageName(extension))
         }
         tasks.register(GENERATE_OPENAPI_GENERATOR_NAME, GenerateTask::class.java) { task ->
             task.onlyIf {
                 extension.generatorType.get() == GeneratorType.OPENAPI_GENERATOR
             }
 
+            task.dependsOn(COMPILE_TASK_NAME)
             task.logging.captureStandardOutput(LogLevel.DEBUG)
             task.logging.captureStandardError(LogLevel.DEBUG)
             task.generatorName.set("kotlin-spring")
-            task.inputSpec.set(compiledJsonFile(project).map { it.asFile.absolutePath })
+            task.inputSpec.set(project.compiledJsonFile(extension).map { it.asFile.absolutePath })
             task.outputDir.set(extension.generatedSourcesOutputDir.map { it.asFile.absolutePath })
 
             task.globalProperties.put("models", "")
@@ -273,9 +261,9 @@ class RestContractSupportPlugin : Plugin<Project> {
             task.additionalProperties.put("gradleBuildFile", false)
             task.additionalProperties.put("interfaceOnly", true)
             task.additionalProperties.put("useSpringBoot3", true)
-            task.additionalProperties.put("basePackage", fullPackageName(extension, project))
-            task.additionalProperties.put("apiPackage", fullPackageName(extension, project).map { "$it.api" })
-            task.additionalProperties.put("modelPackage", fullPackageName(extension, project).map { "$it.model" })
+            task.additionalProperties.put("basePackage", project.fullPackageName(extension))
+            task.additionalProperties.put("apiPackage", project.fullPackageName(extension).map { "$it.api" })
+            task.additionalProperties.put("modelPackage", project.fullPackageName(extension).map { "$it.model" })
             task.additionalProperties.put("sourceFolder", "")
             task.additionalProperties.put("skipDefaultInterface", true)
             task.additionalProperties.putAll(extension.openApiGeneratorAdditionalProperties)
@@ -331,21 +319,21 @@ class RestContractSupportPlugin : Plugin<Project> {
         }
     }
 
-    private fun registerPublications(project: Project) {
+    private fun registerPublications(project: Project, extension: RestContractSupportExtension) {
         project.registerMavenRepository().apply {
             publications { publications ->
                 publications.register(DEFAULT_PUBLICATION_NAME, MavenPublication::class.java) { mp ->
                     mp.groupId = project.group.toString()
-                    mp.artifactId = artifactId(project)
-                    mp.version = project.version.toString()
+                    mp.artifactId = project.artifactId(extension).get()
+                    mp.version = project.extendedProjectVersion(extension).get()
                     mp.from(project.components.getByName(JAVA_COMPONENT_NAME))
                     mp.artifact(project.buildDir.resolve("tar/${project.name}.$ARCHIVE_EXTENSION").absolutePath) { ma ->
                         ma.extension = ARCHIVE_EXTENSION
                     }
-                    mp.artifact(compiledJsonFile(project)) { ma ->
+                    mp.artifact(project.compiledJsonFile(extension)) { ma ->
                         ma.extension = JSON_EXTENSION
                     }
-                    mp.artifact(compiledYamlFile(project)) { ma ->
+                    mp.artifact(project.compiledYamlFile(extension)) { ma ->
                         ma.extension = YAML_EXTENSION
                     }
                 }
@@ -361,14 +349,31 @@ class RestContractSupportPlugin : Plugin<Project> {
             file.deleteRecursively()
         }
     }
-
-    private fun defaultPackageName(project: Project): String = "com.projectronin.rest.${project.name.lowercase().replace("[^a-z]|contract|messaging|openapi|rest}".toRegex(), "")}"
-    private fun versionInfix(project: Project): String = "v${project.version.toString().replace("^([0-9]+)\\..+".toRegex(), "$1")}"
-    private fun fullPackageName(settings: RestContractSupportExtension, project: Project): Provider<String> = settings.packageName.map { configuredName -> "$configuredName.${versionInfix(project)}" }
-    private fun artifactId(project: Project): String = "${project.name}-${versionInfix(project)}"
-    private fun rootOutputDir(project: Project): Provider<Directory> = project.layout.buildDirectory.dir("generated/resources/openapi")
-    private fun extendedOutputDir(project: Project): Provider<Directory> = rootOutputDir(project).map { it.dir("static/v3/api-docs/${project.name}") }
-    private fun compiledJsonFile(project: Project): Provider<RegularFile> = extendedOutputDir(project).map { it.file("${versionInfix(project)}.json") }
-    private fun compiledYamlFile(project: Project): Provider<RegularFile> = extendedOutputDir(project).map { it.file("${versionInfix(project)}.yaml") }
-    private fun documentsOutputDir(project: Project): Provider<Directory> = project.layout.buildDirectory.dir("openapidocs")
 }
+
+private fun Project.defaultPackageName(): Provider<String> = project.provider { "com.projectronin.rest.${name.lowercase().replace("v[0-9]+\$|[^a-z]|contract|messaging|openapi|rest}".toRegex(), "")}" }
+private fun Project.extendedProjectVersion(extension: RestContractSupportExtension): Provider<String> = extension.versionOverride.map { "$it-$version" }.orElse(project.provider { version.toString() })
+private fun Project.versionInfix(extension: RestContractSupportExtension): Provider<String> = extendedProjectVersion(extension).map { v -> "v${v.replace("^([0-9]+)\\..+".toRegex(), "$1")}" }
+private fun Project.fullPackageName(settings: RestContractSupportExtension): Provider<String> = settings.packageName.flatMap { configuredName ->
+    versionInfix(settings).map { infix -> "$configuredName.$infix" }
+}
+
+private fun Project.artifactId(extension: RestContractSupportExtension): Provider<String> = versionInfix(extension).map { infix ->
+    if (name.contains(infix)) {
+        name
+    } else {
+        "$name-$infix"
+    }
+}
+
+private fun Project.rootOutputDir(): Provider<Directory> = layout.buildDirectory.dir("generated/resources/openapi")
+private fun Project.extendedOutputDir(): Provider<Directory> = rootOutputDir().map { it.dir("static/v3/api-docs/$name") }
+private fun Project.compiledJsonFile(extension: RestContractSupportExtension): Provider<RegularFile> = extendedOutputDir().flatMap { outputDir ->
+    versionInfix(extension).map { infix -> outputDir.file("$infix.json") }
+}
+
+private fun Project.compiledYamlFile(extension: RestContractSupportExtension): Provider<RegularFile> = extendedOutputDir().flatMap { outputDir ->
+    versionInfix(extension).map { infix -> outputDir.file("$infix.yaml") }
+}
+
+private fun Project.documentsOutputDir(): Provider<Directory> = layout.buildDirectory.dir("openapidocs")

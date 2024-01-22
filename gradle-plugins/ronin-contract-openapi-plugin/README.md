@@ -176,6 +176,101 @@ copy files in and out of the host's repository directory so they can be used for
 
 `publish`: publishes all outputs to the remote Ronin maven repository.
 
+## Versioning
+
+Versioning is done via tags.  The most recent tag in the format `vN.N.N` or `N.N.N` is considered (but please don't mix the two formats in your repository).  The plugin will consider the latest
+tag, and use these rules:
+
+- If the most recent tag is on the current commit, the version from the tag is used directly.  E.g. if commit `04be8081befb138aeddbfde95310392a3daec610` is current, and that commit is tagged `v3.7.0`,
+  the build will use the version 3.7.0
+- If there's been a commit since the latest tag, the build will produce a patch-level increment with a snapshot.  E.g. if the most recent tag is `v3.7.0` and there has been at least one commit since
+  then, the build will use version `3.7.1-SNAPSHOT`.
+- If the build is on a branch other than `main` or `vN` where `N` is a major version, the version used will include some version of the branch name.  E.g. if you are on branch `feature/DASH-9943-something`,
+  the build will produce a version like `3.7.1-DASH9943-SNAPSHOT`.
+
+To set the next version (e.g. to move from 1.x.y to 2.x.y or from 1.x.y to 1.y.y), tag the repository with the desired version plus `-alpha`.  E.g., if your current tag is `v3.7.0` and you
+want the next build to be `v3.8.0` not `v3.7.1`, do:
+
+```bash
+git tag v3.8.0-alpha
+git push v3.8.0-alpha
+```
+
+It is recommended you don't do this at the _same_ location as an existing release tag; do it on the first commit you want to have the new version.  It's also probably important to tag a
+commit on the main branch, rather than on your feature branch.
+
+To _revise an older version_, you will need to create a `vX` branch where `X` is the major version you want to publish, from the tag you want to revise.  E.g.:
+
+```bash
+git checkout v1.7.3
+git checkout -b v1
+# do some work
+git add '.'
+git commit -m "I did some work"
+```
+
+This should produce a new version, e.g. `1.7.4-SNAPSHOT`.
+
+You _probably_ don't want to merge this branch back to main, because that will confuse the versioning algorithm.
+
+# Using inside a service repository
+
+You can also put your contract directly inside your service repository.  The procedure for doing so is:
+
+- create a new gradle module in your project, e.g.: `myservice-contract-openapi`
+- Add a spectral.yaml file to the root of the new module with content like:
+```yaml
+- extends: ["spectral:oas"]
+
+rules:
+  oas3-unused-component: info
+```
+- add a build.gradle.kts to your new module like:
+```kotlin
+- group = "com.projectronin.rest.contract"
+
+plugins {
+    alias(roningradle.plugins.openapi.contract)
+}
+
+restContractSupport {
+    packageName.set("desired.package.name")
+}
+```
+- add openapi specs as described in this document under the new module's `src/main/openapi` directory, e.g. `myservice-contract-openapi/src/main/openapi`
+- use the new module as a dependency in your service, e.g.: `implementation(project(":myservice-contract-openapi"))`
+- assuming the contract should be available to consumers, you will need to modify your CI/CD builds to do a maven publish to get the service contract out there.
+- use the whole gradle build as usual.
+
+## To maintain multiple versions of the contract in the service
+
+Assuming you are moving from `vX` to `vY` for your service, and that you will provide both versions simultaneously from the same service, you can do the following.
+
+- tag your service as `Y.0.0-alpha`.  This should produce the new `Y.0.0` version
+- create a new module in your service to represent the _old_ version of the contract.  E.g. if you have `myservice-contract-openapi`, create one called `myservice-contract-openapi-vX`
+- copy the old contracts, yaml, and gradle build file from the current module to the "old" module, e.g. from `myservice-contract-openapi` to `myservice-contract-openapi-vX`
+- modify the build file in the new (old) version to include a `versionOverride` configuration.  E.g.:
+```kotlin
+group = "com.projectronin.rest.contract"
+
+plugins {
+    alias(roningradle.plugins.openapi.contract)
+}
+
+restContractSupport {
+    packageName.set("desired.package.name")
+    inputFile.set(file("src/main/openapi/myservice-contract-openapi.json")) // you might need this because the file name no longer matches the module name
+    versionOverride.set("X.n.n") // this should be whatever the PREVIOUS version of the contract was.
+}
+- ```
+- add the new (old) contract artifact to your service, e.g. with `implementation(project(":myservice-contract-openapi-vX"))`
+- begin to evolve your new contract version
+
+If done right, this _should_ generate two separate contract versions with associated classes in two separate packages, and you should be able to serve them both from separate controllers
+in your service.  The newly published versions of the _old_ contract will be published under the old version with a suffix, like `X.n.n-Y.n.n`.  This might be awkward,
+but should allow you to track what actual version of the old contract to use.  Consumers, of course, could stay on the last un-suffixed version of the old contract,
+only updating if they need some fix / change in it to the suffixed version.  Ideally they'll move to the new version soon.
+
 # Migrating
 
 ## Versioning

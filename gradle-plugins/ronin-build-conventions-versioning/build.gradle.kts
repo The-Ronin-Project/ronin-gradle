@@ -1,6 +1,6 @@
 dependencies {
     implementation(project(":shared-libraries:gradle-helpers"))
-    implementation(libs.gradle.axion.release)
+    implementation(libs.jgit)
 
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.assertj)
@@ -15,17 +15,4 @@ gradlePlugin {
             implementationClass = "com.projectronin.versioning.VersioningPlugin"
         }
     }
-}
-
-dependencyHelper {
-    helperPlugins.set(
-        mapOf(
-            "axionRelease" to libs.plugins.axion.release
-        )
-    )
-    helperDependencies.set(
-        mapOf(
-            "axionRelease" to libs.gradle.axion.release
-        )
-    )
 }

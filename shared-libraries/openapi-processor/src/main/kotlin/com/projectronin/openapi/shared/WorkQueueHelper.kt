@@ -11,9 +11,11 @@ import java.io.File
  */
 fun WorkerExecutor.createWorkQueueWithDependencies(project: Project): WorkQueue {
     val fabriktConfigName = "fabrikt"
-    project.configurations.maybeCreate(fabriktConfigName)
-    project.dependencies.add(fabriktConfigName, DependencyHelper.fabrikt)
-    project.dependencies.add(fabriktConfigName, DependencyHelper.swaggerParser)
+    if (project.configurations.findByName(fabriktConfigName) == null) {
+        project.configurations.maybeCreate(fabriktConfigName)
+        project.dependencies.add(fabriktConfigName, DependencyHelper.fabrikt)
+        project.dependencies.add(fabriktConfigName, DependencyHelper.swaggerParser)
+    }
     val fabriktDependencies = project.configurations.getByName(fabriktConfigName).resolve()
 
     return classLoaderIsolation { workerSpec -> workerSpec.classpath.from(*fabriktDependencies.toTypedArray<File?>()) }

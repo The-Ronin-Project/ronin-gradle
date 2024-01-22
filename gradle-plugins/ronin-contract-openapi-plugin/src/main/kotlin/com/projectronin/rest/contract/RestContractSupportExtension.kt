@@ -81,4 +81,21 @@ interface RestContractSupportExtension {
      * sets of the underlying libraries — *stability not guaranteed*.
      */
     val supplementalConfiguration: Property<SupplementalConfiguration>
+
+    /**
+     * An _optional_ version override in semver format: Major.Minor.Patch.  Will be suffixed with the real project version,
+     * so be careful with this.  It's meant only for maintaining a contract _inside_ your service and keeping a vX and vY contract side-by-side.
+     *
+     * For instance, if you put your contract inside your service repo, you could do this:
+     * ```
+     *    project root dir, at tag 2.1.7
+     *       contract-v1
+     *          with versionOverride set to 1.0.3
+     *       contract-current
+     *       service
+     *          depends on both contract-v1 and contract-current
+     * ```
+     * This setup will produce two sets of contract artifacts, 2.1.7 and 1.0.3-2.1.7.
+     */
+    val versionOverride: Property<String>
 }

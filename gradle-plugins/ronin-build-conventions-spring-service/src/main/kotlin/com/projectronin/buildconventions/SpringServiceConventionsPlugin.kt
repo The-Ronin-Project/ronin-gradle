@@ -2,11 +2,11 @@ package com.projectronin.buildconventions
 
 import com.projectronin.gradle.helpers.addTaskThatDependsOnThisByName
 import com.projectronin.gradle.helpers.applyPlugin
-import com.projectronin.gradle.helpers.maybeServiceVersion
+import com.projectronin.gradle.helpers.roninProjectVersion
 import com.projectronin.gradle.helpers.runtimeOnlyDependency
+import com.projectronin.gradle.helpers.testImplementationDependency
 import com.projectronin.roninbuildconventionskotlin.PluginIdentifiers
 import com.projectronin.roninbuildconventionsspringservice.DependencyHelper
-import org.eclipse.jgit.api.Git
 import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -25,6 +25,7 @@ class SpringServiceConventionsPlugin : Plugin<Project> {
             .applyPlugin(DependencyHelper.Plugins.springKotlinCore.id)
             .applyPlugin(DependencyHelper.Plugins.springKotlinJpa.id)
             .applyPlugin(DependencyHelper.Plugins.kapt.id)
+            .testImplementationDependency("com.projectronin.services.gradle:database-test-helpers:${PluginIdentifiers.version}")
 
         target.extensions.getByType(SpringBootExtension::class.java).apply {
             buildInfo()
@@ -55,56 +56,19 @@ class SpringServiceConventionsPlugin : Plugin<Project> {
             @Suppress("ObjectLiteralToLambda")
             t.doLast(object : Action<Task> {
                 override fun execute(t: Task) {
-                    val git = Git.open(target.rootProject.projectDir)
-                    val ref = git.repository.exactRef("HEAD")
-                    val reader = git.repository.newObjectReader()
-                    val description: String? = git.describe()
-                        .setTags(true)
-                        .setAlways(false)
-                        .setMatch("[0-9]*.[0-9]*.[0-9]*")
-                        .setTarget("HEAD")
-                        .call()
-
-                    // note that this won't produce the same version as SERVICE_VERSION would.  But the intent is that this is only
-                    // informational AND that GHAs will set SERVICE_VERSION.
-                    val descriptionPattern = """^([0-9]+)\.*([0-9]+)\.*([0-9]+)(-alpha)?(?:-([0-9]+)-g.?[0-9a-fA-F]{3,})?$""".toRegex()
-                    val (lastTag: String?, commitDistance: Int?, tagBasedVersion: String?) = when (val match = description?.let { descriptionPattern.find(it) }) {
-                        null -> Triple(null, null, null)
-
-                        else -> {
-                            val (major, minor, patch, suffix, commitDistance) = match.destructured
-                            Triple(
-                                "$major.$minor.$patch${suffix.takeIf { it.isNotBlank() } ?: ""}",
-                                commitDistance.takeIf { it.isNotBlank() }?.toInt() ?: 0,
-                                when (commitDistance) {
-                                    "0", "" -> "$major.$minor.$patch"
-                                    else -> if (suffix.isNotBlank()) {
-                                        "$major.$minor.$patch-SNAPSHOT"
-                                    } else {
-                                        "$major.$minor.${patch.toInt() + 1}-SNAPSHOT"
-                                    }
-                                }
-                            )
-                        }
-                    }
-
-                    val version: String =
-                        when (val serviceVersion: String? = target.maybeServiceVersion()) {
-                            null -> tagBasedVersion ?: "1.0.0-SNAPSHOT"
-                            else -> serviceVersion
-                        }
+                    val roninProjectVersion = target.roninProjectVersion
 
                     // language=json
                     outputFile.asFile.writeText(
                         """
                         {
-                          "version": "$version",
-                          "lastTag": "${lastTag ?: "n/a"}",
-                          "commitDistance": ${commitDistance ?: 0},
-                          "gitHash": "${reader.abbreviate(ref.objectId).name()}",
-                          "gitHashFull": "${ref.objectId.name}",
-                          "branchName": "${System.getenv("REF_NAME")?.ifBlank { null } ?: git.repository.branch}",
-                          "dirty": ${!git.status().call().isClean}
+                          "version": "${roninProjectVersion.serviceVersion ?: roninProjectVersion.tagBasedVersion}",
+                          "lastTag": "${roninProjectVersion.lastTag ?: "n/a"}",
+                          "commitDistance": ${roninProjectVersion.commitDistance ?: 0},
+                          "gitHash": "${roninProjectVersion.gitHash}",
+                          "gitHashFull": "${roninProjectVersion.gitHashFull}",
+                          "branchName": "${roninProjectVersion.branchName}",
+                          "dirty": ${roninProjectVersion.dirty}
                         }
                         """.trimIndent()
                     )

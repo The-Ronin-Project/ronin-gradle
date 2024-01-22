@@ -16,6 +16,7 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.file.Directory
 import org.gradle.api.plugins.BasePlugin
+import org.gradle.api.provider.Provider
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.bundling.Compression
@@ -28,6 +29,7 @@ import java.io.File
 /**
  * The JsonContractPlugin provides access to a set of tasks capable of validating and generating documentation for schemas.
  */
+@Suppress("ConstPropertyName")
 class JsonContractPlugin : Plugin<Project> {
 
     companion object {
@@ -38,11 +40,7 @@ class JsonContractPlugin : Plugin<Project> {
             fun schemaSourceDir(project: Project): Directory = project.layout.projectDirectory.dir(defaultSourceDir)
             private const val defaultExamplesDir = "src/test/resources/examples"
             fun exampleSourceDir(project: Project): Directory = project.layout.projectDirectory.dir(defaultExamplesDir)
-            fun defaultPackageName(project: Project): String = "com.projectronin.json.${project.name.lowercase().replace("[^a-z]|contract|messaging".toRegex(), "")}"
-            private fun versionInfix(project: Project): String = "v${project.version.toString().replace("^([0-9]+)\\..+".toRegex(), "$1")}"
-            fun fullPackageName(settings: JsonContractExtension, project: Project): String = "${settings.packageName.get()}.${versionInfix(project)}"
-            fun artifactId(project: Project): String = "${project.name}-${versionInfix(project)}"
-
+            fun defaultPackageName(project: Project): String = "com.projectronin.json.${project.name.lowercase().replace("v[0-9]+$|[^a-z]|contract|messaging".toRegex(), "")}"
             fun tarDir(project: Project): File = File("${project.buildDir}/tar")
 
             const val archiveExtension = "tar.gz"
@@ -77,12 +75,10 @@ class JsonContractPlugin : Plugin<Project> {
         }
 
         object Extensions {
-            const val axionRelease = "scmVersion"
             const val jsonSchema2Pojo = "jsonSchema2Pojo"
         }
 
         object DependencyScopes {
-            const val compileOnly = "compileOnly"
             const val schemaDependency = "schemaDependency"
         }
     }
@@ -107,11 +103,6 @@ class JsonContractPlugin : Plugin<Project> {
             packageName.convention(Locations.defaultPackageName(project))
         }
 
-        (project.extensions.findByType(JsonSchemaExtension::class.java) ?: project.extensions.create(Extensions.jsonSchema2Pojo, JsonSchemaExtension::class.java)).apply {
-            sourceFiles = listOf(extension.schemaSourceDir.asFile.get())
-            targetPackage = Locations.fullPackageName(extension, project)
-        }
-
         val testTask = project.tasks.register(ContractTasks.testContracts, TestTask::class.java)
         project.tasks.getByName(ExternalTasks.check) {
             it.dependsOn(testTask)
@@ -133,11 +124,20 @@ class JsonContractPlugin : Plugin<Project> {
 
         project.tasks.findByName(ExternalTasks.assemble)?.dependsOn(ContractTasks.createSchemaTar)
 
-        registerPublications(
-            project,
-            tarDir.resolve(Locations.archiveFileName(project))
-        )
         registerDownloadTask(extension, project)
+
+        project.afterEvaluate {
+            (project.extensions.findByType(JsonSchemaExtension::class.java) ?: project.extensions.create(Extensions.jsonSchema2Pojo, JsonSchemaExtension::class.java)).apply {
+                sourceFiles = listOf(extension.schemaSourceDir.asFile.get())
+                targetPackage = project.fullPackageName(extension).get()
+            }
+
+            registerPublications(
+                project,
+                tarDir.resolve(Locations.archiveFileName(project)),
+                extension
+            )
+        }
     }
 
     private fun registerDownloadTask(
@@ -189,14 +189,15 @@ class JsonContractPlugin : Plugin<Project> {
 
     private fun registerPublications(
         project: Project,
-        tarFileLocation: File
+        tarFileLocation: File,
+        extension: JsonContractExtension
     ) {
         project.registerMavenRepository().apply {
             publications { publications ->
                 publications.register(DEFAULT_PUBLICATION_NAME, MavenPublication::class.java) { mp ->
                     mp.groupId = project.group.toString()
-                    mp.artifactId = Locations.artifactId(project)
-                    mp.version = project.version.toString()
+                    mp.artifactId = project.artifactId(extension).get()
+                    mp.version = project.extendedProjectVersion(extension).get()
                     mp.from(project.components.getByName(JAVA_COMPONENT_NAME))
                     mp.artifact(tarFileLocation.absolutePath) { ma ->
                         ma.extension = Locations.archiveExtension
@@ -208,5 +209,18 @@ class JsonContractPlugin : Plugin<Project> {
         project.tasks.findByName(ExternalTasks.localPublishTask)?.dependsOn(ContractTasks.createSchemaTar)
         project.tasks.findByName(ExternalTasks.remoteSnapshotPublishTask)?.dependsOn(ContractTasks.createSchemaTar)
         project.tasks.findByName(ExternalTasks.remoteReleasePublishTask)?.dependsOn(ContractTasks.createSchemaTar)
+    }
+}
+
+private fun Project.extendedProjectVersion(extension: JsonContractExtension): Provider<String> = extension.versionOverride.map { "$it-$version" }.orElse(project.provider { version.toString() })
+private fun Project.versionInfix(extension: JsonContractExtension): Provider<String> = extendedProjectVersion(extension).map { v -> "v${v.replace("^([0-9]+)\\..+".toRegex(), "$1")}" }
+fun Project.fullPackageName(settings: JsonContractExtension): Provider<String> = settings.packageName.flatMap { configuredName ->
+    versionInfix(settings).map { infix -> "$configuredName.$infix" }
+}
+fun Project.artifactId(extension: JsonContractExtension): Provider<String> = versionInfix(extension).map { infix ->
+    if (name.contains(infix)) {
+        name
+    } else {
+        "$name-$infix"
     }
 }

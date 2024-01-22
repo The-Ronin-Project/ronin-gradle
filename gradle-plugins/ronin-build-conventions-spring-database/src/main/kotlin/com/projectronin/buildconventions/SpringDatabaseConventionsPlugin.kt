@@ -20,5 +20,6 @@ class SpringDatabaseConventionsPlugin : Plugin<Project> {
             .runtimeOnlyDependency(DependencyHelper.mysqlConnector)
             .testImplementationDependency(DependencyHelper.springBootTest)
             .testImplementationDependency(DependencyHelper.testcontainersMySql)
+            .testImplementationDependency("com.projectronin.services.gradle:database-test-helpers:${com.projectronin.roninbuildconventionsspringdatabase.PluginIdentifiers.version}")
     }
 }

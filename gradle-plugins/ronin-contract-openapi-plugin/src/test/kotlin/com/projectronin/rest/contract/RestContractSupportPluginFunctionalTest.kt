@@ -69,6 +69,29 @@ class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
     }
 
     @Test
+    fun `building the API works for override version`() {
+        basicBuildTest(
+            "1.0.7-2.0.0-SNAPSHOT",
+            "v1",
+            libsArtifactSemver = "2.0.0-SNAPSHOT"
+        ) { git ->
+            git.tag().setName("v2.0.0-alpha").call()
+            copyBaseResources("v2")
+            writeSpectralConfig()
+            projectDir.resolve("build.gradle.kts").appendText(
+                """
+                    restContractSupport {
+                        inputFile.set(layout.projectDirectory.file("src/main/openapi/questionnaire.yml"))
+                        versionOverride.set("1.0.7")
+                    }
+                    
+                """.trimIndent()
+            )
+            commit(git)
+        }
+    }
+
+    @Test
     fun `fails if the project name doesn't match`() {
         val result = setupAndExecuteTestProject(
             listOf("build"),
@@ -364,6 +387,7 @@ class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
         modelPackageSuffix: String = "models",
         controllerPackageSuffix: String = "controllers",
         extraVerifiers: () -> Unit = {},
+        libsArtifactSemver: String = semver,
         extraStuffToDo: (Git) -> Unit = { defaultExtraStuffToDo(it) }
     ) {
         runCatching {
@@ -394,8 +418,8 @@ class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
             assertThat(yamlTree["info"]["version"].textValue()).isEqualTo(semver)
             assertThat(yamlTree["components"]["schemas"].fields().asSequence().toList().map { it.key }).containsExactlyInAnyOrder(*getExpectedSchemaElements())
 
-            assertThat(projectDir.resolve("build/libs/questionnaire-$semver.jar")).exists()
-            val jar = JarFile(projectDir.resolve("build/libs/questionnaire-$semver.jar"))
+            assertThat(projectDir.resolve("build/libs/questionnaire-$libsArtifactSemver.jar")).exists()
+            val jar = JarFile(projectDir.resolve("build/libs/questionnaire-$libsArtifactSemver.jar"))
             assertThat(jar.entries().asSequence().find { it.name == "static/v3/api-docs/questionnaire/$shortVersion.json" }).isNotNull
             assertThat(jar.entries().asSequence().find { it.name == "static/v3/api-docs/questionnaire/$shortVersion.yaml" }).isNotNull
             assertThat(projectDir.resolve("build/tar/questionnaire.tar.gz")).exists()
@@ -443,7 +467,7 @@ class RestContractSupportPluginFunctionalTest : AbstractFunctionalTest() {
             )
             // build/libs/questionnaire-1.4.7.jar
             // build/libs/questionnaire-1.4.7-sources.jar
-            val sourcesJar = JarFile(projectDir.resolve("build/libs/questionnaire-$semver-sources.jar"))
+            val sourcesJar = JarFile(projectDir.resolve("build/libs/questionnaire-$libsArtifactSemver-sources.jar"))
             assertThat(sourcesJar.entries().asSequence().find { it.name == "static/v3/api-docs/questionnaire/$shortVersion.json" }).isNotNull
             assertThat(sourcesJar.entries().asSequence().find { it.name == "static/v3/api-docs/questionnaire/$shortVersion.yaml" }).isNotNull
 

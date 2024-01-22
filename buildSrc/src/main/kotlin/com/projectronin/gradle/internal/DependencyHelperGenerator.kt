@@ -100,6 +100,7 @@ object DependencyHelperGenerator {
                                         )
                                     builder
                                 }
+                                .addProperty(PropertySpec.builder("version", String::class).initializer("%S", targetProject.version).build())
                         }
                         .build()
                 )

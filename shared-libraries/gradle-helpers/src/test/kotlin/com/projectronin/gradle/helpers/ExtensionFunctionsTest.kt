@@ -18,27 +18,6 @@ import org.junit.jupiter.api.Test
 class ExtensionFunctionsTest {
 
     @Test
-    fun `should properly handle service version - null`() {
-        val project = mockk<Project>()
-        every { project.properties } returns mutableMapOf()
-        assertThat(project.maybeServiceVersion()).isNull()
-    }
-
-    @Test
-    fun `should properly handle service version - empty`() {
-        val project = mockk<Project>()
-        every { project.properties } returns mutableMapOf("service-version" to "")
-        assertThat(project.maybeServiceVersion()).isNull()
-    }
-
-    @Test
-    fun `should properly handle service version - value`() {
-        val project = mockk<Project>()
-        every { project.properties } returns mutableMapOf("service-version" to "4.7.4-SNAPSHOT")
-        assertThat(project.maybeServiceVersion()).isEqualTo("4.7.4-SNAPSHOT")
-    }
-
-    @Test
     fun `should add task immediately by name if it exists`() {
         val project = mockk<Project>()
         val tasks = mockk<TaskContainer>()
@@ -79,7 +58,7 @@ class ExtensionFunctionsTest {
 
         every { task.project } returns project
         every { task.name } returns "owner"
-        every { tasks.findByName("foo") } returns(null)
+        every { tasks.findByName("foo") } returns (null)
         every { tasks.whenTaskAdded(capture(actionSlot)) } answers { it.invocation.args[0] as Action<in Task> }
         every { task.dependsOn(fooTask) } returns fooTask
 

@@ -6,6 +6,7 @@ dependencies {
     testImplementation(libs.assertj)
     testImplementation(gradleTestKit())
     testImplementation(project(":shared-libraries:gradle-testkit-utilities"))
+    testImplementation(project(":shared-libraries:database-test-helpers"))
 }
 
 gradlePlugin {
@@ -15,6 +16,10 @@ gradlePlugin {
             implementationClass = "com.projectronin.buildconventions.SpringDatabaseConventionsPlugin"
         }
     }
+}
+
+tasks.test {
+    dependsOn(":shared-libraries:database-test-helpers:assemble", ":shared-libraries:database-test-helpers:generatePomFileForMavenPublication")
 }
 
 dependencyHelper {

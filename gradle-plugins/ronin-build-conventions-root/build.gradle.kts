@@ -5,6 +5,7 @@ dependencies {
     implementation(libs.gradle.ktlint)
     implementation(libs.gradle.kotlin.jvm)
     implementation(libs.gradle.releasehub)
+    implementation(libs.jgit)
 
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.assertj)

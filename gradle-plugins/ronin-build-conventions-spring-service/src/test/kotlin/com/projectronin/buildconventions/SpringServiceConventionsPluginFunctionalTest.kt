@@ -7,15 +7,18 @@ import org.assertj.core.api.Assertions.assertThat
 import org.eclipse.jgit.api.Git
 import org.gradle.testkit.runner.TaskOutcome
 import org.junit.jupiter.api.Test
+import java.io.File
 import java.util.jar.JarFile
 
 class SpringServiceConventionsPluginFunctionalTest : AbstractFunctionalTest() {
 
     @Test
     fun `should build a spring service project`() {
+        val m2RepositoryDir = createM2Repo()
         val result = setupAndExecuteTestProject(
-            listOf("build", "--stacktrace")
+            listOf("build", "--stacktrace", "-Dmaven.repo.local=$m2RepositoryDir")
         ) {
+            copyDbHelperFile(m2RepositoryDir)
             it.tag().setName("1.0.0-alpha").call()
             copyResourceDir("projects/demo", projectDir)
             projectDir.resolve(".gitignore").appendText("\ngradle.properties\n")
@@ -49,9 +52,11 @@ class SpringServiceConventionsPluginFunctionalTest : AbstractFunctionalTest() {
 
     @Test
     fun `should create version info without a tag`() {
+        val m2RepositoryDir = createM2Repo()
         setupAndExecuteTestProject(
-            listOf("generateServiceInfo", "--stacktrace")
+            listOf("generateServiceInfo", "--stacktrace", "-Dmaven.repo.local=$m2RepositoryDir")
         ) {
+            copyDbHelperFile(m2RepositoryDir)
             copyResourceDir("projects/demo", projectDir)
             projectDir.resolve(".gitignore").appendText("\ngradle.properties\n")
             it.add().addFilepattern(".").call()
@@ -75,9 +80,11 @@ class SpringServiceConventionsPluginFunctionalTest : AbstractFunctionalTest() {
 
     @Test
     fun `should create version using direct version input`() {
+        val m2RepositoryDir = createM2Repo()
         setupAndExecuteTestProject(
-            listOf("generateServiceInfo", "--stacktrace", "-Pservice-version=7.32.1")
+            listOf("generateServiceInfo", "--stacktrace", "-Pservice-version=7.32.1", "-Dmaven.repo.local=$m2RepositoryDir")
         ) {
+            copyDbHelperFile(m2RepositoryDir)
             copyResourceDir("projects/demo", projectDir)
             projectDir.resolve(".gitignore").appendText("\ngradle.properties\n")
             it.add().addFilepattern(".").call()
@@ -101,9 +108,11 @@ class SpringServiceConventionsPluginFunctionalTest : AbstractFunctionalTest() {
 
     @Test
     fun `should create version info that's dirty`() {
+        val m2RepositoryDir = createM2Repo()
         setupAndExecuteTestProject(
-            listOf("generateServiceInfo", "--stacktrace")
+            listOf("generateServiceInfo", "--stacktrace", "-Dmaven.repo.local=$m2RepositoryDir")
         ) {
+            copyDbHelperFile(m2RepositoryDir)
             it.tag().setName("3.1.7").call()
             copyResourceDir("projects/demo", projectDir)
             projectDir.resolve(".gitignore").appendText("\ngradle.properties\n")
@@ -129,9 +138,11 @@ class SpringServiceConventionsPluginFunctionalTest : AbstractFunctionalTest() {
 
     @Test
     fun `should create version info that is not a snapshot`() {
+        val m2RepositoryDir = createM2Repo()
         setupAndExecuteTestProject(
-            listOf("generateServiceInfo", "--stacktrace")
+            listOf("generateServiceInfo", "--stacktrace", "-Dmaven.repo.local=$m2RepositoryDir")
         ) {
+            copyDbHelperFile(m2RepositoryDir)
             copyResourceDir("projects/demo", projectDir)
             projectDir.resolve(".gitignore").appendText("\ngradle.properties\n")
             it.add().addFilepattern(".").call()
@@ -156,9 +167,11 @@ class SpringServiceConventionsPluginFunctionalTest : AbstractFunctionalTest() {
 
     @Test
     fun `should build a spring webflux project`() {
+        val m2RepositoryDir = createM2Repo()
         val result = setupAndExecuteTestProject(
-            listOf("build", "--stacktrace")
+            listOf("build", "--stacktrace", "-Dmaven.repo.local=$m2RepositoryDir")
         ) {
+            copyDbHelperFile(m2RepositoryDir)
             buildFile.writeText(
                 """
                 group = "com.example"
@@ -231,5 +244,21 @@ class SpringServiceConventionsPluginFunctionalTest : AbstractFunctionalTest() {
 
     override fun defaultExtraStuffToDo(git: Git) {
         // do nothing
+    }
+
+    private fun createM2Repo(): File {
+        val m2RepositoryDir = projectDir.resolve(".m2/repository")
+        m2RepositoryDir.mkdirs()
+        return m2RepositoryDir
+    }
+
+    private fun copyDbHelperFile(m2RepositoryDir: File) {
+        val extraLibDir = rootDirectory.resolve("shared-libraries/database-test-helpers/build/libs")
+        val jarFile = extraLibDir.listFiles()!!.find { it.name.endsWith("$projectVersion.jar") }!!
+        val repoJar = m2RepositoryDir.resolve("com/projectronin/services/gradle/database-test-helpers/$projectVersion/database-test-helpers-$projectVersion.jar")
+        jarFile.copyTo(repoJar)
+        rootDirectory.resolve("shared-libraries/database-test-helpers/build/publications/Maven/pom-default.xml").copyTo(
+            m2RepositoryDir.resolve("com/projectronin/services/gradle/database-test-helpers/$projectVersion/database-test-helpers-$projectVersion.pom")
+        )
     }
 }

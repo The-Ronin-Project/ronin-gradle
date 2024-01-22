@@ -25,12 +25,7 @@ class JsonContractPluginTestFunctionalTest : AbstractFunctionalTest() {
             "createSchemaTar",
             "downloadSchemaDependencies",
             "generateJsonSchema2Pojo",
-            "currentVersion",
-            "createRelease",
-            "markNextVersion",
-            "pushRelease",
-            "release",
-            "verifyRelease"
+            "currentVersion"
         ).forEach { taskName ->
             assertThat(result.output).contains(taskName)
         }
@@ -137,6 +132,42 @@ class JsonContractPluginTestFunctionalTest : AbstractFunctionalTest() {
             it.tag().setName("v2.7.4").call()
         }
         assertThat(result.output).contains("BUILD SUCCESSFUL")
+    }
+
+    @Test
+    fun `should publish locally with a modified version`() {
+        val result = testLocalPublish(
+            listOf("publishToMavenLocal", "--stacktrace"),
+            listOf(
+                ArtifactVerification(
+                    artifactId = "change-project-name-here-v1",
+                    groupId = defaultGroupId(),
+                    version = "1.0.7-2.7.4"
+                ),
+                ArtifactVerification(
+                    artifactId = "change-project-name-here-v1",
+                    groupId = defaultGroupId(),
+                    version = "1.0.7-2.7.4",
+                    extension = "tar.gz",
+                    classifier = "schemas"
+                )
+            ),
+            projectSetup = ProjectSetup()
+        ) {
+            defaultExtraStuffToDo(it)
+            it.tag().setName("v2.7.4").call()
+            projectDir.resolve("build.gradle.kts").appendText(
+                """
+                    contracts {
+                        versionOverride.set("1.0.7")
+                    }
+                    
+                """.trimIndent()
+            )
+        }
+        assertThat(result.output).contains("BUILD SUCCESSFUL")
+        assertThat(projectDir.resolve("build/generated-sources/js2p/com/projectronin/json/changeprojectnamehere/v1/MedicationV1Schema.java").exists()).isTrue()
+        assertThat(projectDir.resolve("build/generated-sources/js2p/com/projectronin/json/changeprojectnamehere/v1/PersonV1Schema.java").exists()).isTrue()
     }
 
     @Test
