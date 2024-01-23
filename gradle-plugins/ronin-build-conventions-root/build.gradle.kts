@@ -49,5 +49,8 @@ tasks.getByName("test").dependsOn(
     ":gradle-plugins:ronin-build-conventions-kotlin:generatePomFileForPluginMavenPublication",
     ":shared-libraries:gradle-helpers:assemble",
     ":shared-libraries:gradle-helpers:generateMetadataFileForMavenPublication",
-    ":shared-libraries:gradle-helpers:generatePomFileForMavenPublication"
+    ":shared-libraries:gradle-helpers:generatePomFileForMavenPublication",
+    ":shared-libraries:database-test-helpers:assemble",
+    ":shared-libraries:database-test-helpers:generateMetadataFileForMavenPublication",
+    ":shared-libraries:database-test-helpers:generatePomFileForMavenPublication"
 )

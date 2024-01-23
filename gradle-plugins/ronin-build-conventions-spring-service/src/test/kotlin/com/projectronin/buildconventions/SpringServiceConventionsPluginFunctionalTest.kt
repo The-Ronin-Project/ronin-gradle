@@ -253,12 +253,12 @@ class SpringServiceConventionsPluginFunctionalTest : AbstractFunctionalTest() {
     }
 
     private fun copyDbHelperFile(m2RepositoryDir: File) {
-        val extraLibDir = rootDirectory.resolve("shared-libraries/database-test-helpers/build/libs")
-        val jarFile = extraLibDir.listFiles()!!.find { it.name.endsWith("$projectVersion.jar") }!!
-        val repoJar = m2RepositoryDir.resolve("com/projectronin/services/gradle/database-test-helpers/$projectVersion/database-test-helpers-$projectVersion.jar")
-        jarFile.copyTo(repoJar)
-        rootDirectory.resolve("shared-libraries/database-test-helpers/build/publications/Maven/pom-default.xml").copyTo(
-            m2RepositoryDir.resolve("com/projectronin/services/gradle/database-test-helpers/$projectVersion/database-test-helpers-$projectVersion.pom")
+        copyJarToLocalRepository(
+            m2RepositoryDir = m2RepositoryDir,
+            groupId = "com.projectronin.services.gradle",
+            projectDir = rootDirectory.resolve("shared-libraries/database-test-helpers"),
+            projectName = "database-test-helpers",
+            version = projectVersion
         )
     }
 }

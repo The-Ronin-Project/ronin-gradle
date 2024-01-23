@@ -19,7 +19,11 @@ gradlePlugin {
 }
 
 tasks.test {
-    dependsOn(":shared-libraries:database-test-helpers:assemble", ":shared-libraries:database-test-helpers:generatePomFileForMavenPublication")
+    dependsOn(
+        ":shared-libraries:database-test-helpers:assemble",
+        ":shared-libraries:database-test-helpers:generatePomFileForMavenPublication",
+        ":shared-libraries:database-test-helpers:generateMetadataFileForMavenPublication"
+    )
 }
 
 dependencyHelper {

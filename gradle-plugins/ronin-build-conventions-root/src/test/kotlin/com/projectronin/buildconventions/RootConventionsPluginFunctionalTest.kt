@@ -136,6 +136,7 @@ class RootConventionsPluginFunctionalTest : AbstractFunctionalTest() {
         copyPluginToLocalRepo(m2RepositoryDir, groupId, "ronin-build-conventions-spring-service", "com.projectronin.buildconventions.spring-service", projectVersion)
         copyPluginToLocalRepo(m2RepositoryDir, groupId, "ronin-build-conventions-kotlin", "com.projectronin.buildconventions.kotlin-jvm", projectVersion)
         copyJarToLocalRepository(m2RepositoryDir, groupId, rootDirectory.resolve("shared-libraries/gradle-helpers"), "gradle-helpers", projectVersion)
+        copyJarToLocalRepository(m2RepositoryDir, groupId, rootDirectory.resolve("shared-libraries/database-test-helpers"), "database-test-helpers", projectVersion)
 
         val result = setupAndExecuteTestProject(
             listOf("build", "--stacktrace", "-Dmaven.repo.local=$m2RepositoryDir"),
