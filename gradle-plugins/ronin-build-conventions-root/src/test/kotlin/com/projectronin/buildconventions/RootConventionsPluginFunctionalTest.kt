@@ -91,8 +91,10 @@ class RootConventionsPluginFunctionalTest : AbstractFunctionalTest() {
             copyResourceDir("projects/demo", projectDir)
         }
 
-        assertThat(result.output).contains("BUILD FAILED")
-        assertThat(result.output).contains("build/reports/ktlint/ktlintKotlinScriptCheck/ktlintKotlinScriptCheck.txt")
+        assertThat(result.output).contains(
+            "BUILD FAILED",
+            "build/reports/ktlint/ktlintKotlinScriptCheck/ktlintKotlinScriptCheck.txt"
+        )
     }
 
     @Test
@@ -103,10 +105,12 @@ class RootConventionsPluginFunctionalTest : AbstractFunctionalTest() {
             copyResourceDir("projects/demo", projectDir)
         }
 
-        assertThat(result.output).contains("validateDependencies")
-        assertThat(result.output).contains("listDependenciesToUpgrade")
-        assertThat(result.output).contains("listDependencies")
-        assertThat(result.output).contains("upgradeDependencies")
+        assertThat(result.output).contains(
+            "validateDependencies",
+            "listDependenciesToUpgrade",
+            "listDependencies",
+            "upgradeDependencies"
+        )
     }
 
     @Test
@@ -188,9 +192,11 @@ class RootConventionsPluginFunctionalTest : AbstractFunctionalTest() {
             fail = true
         )
 
-        assertThat(sonarResult.output).contains("Unable to execute SonarScanner analysis")
-        assertThat(sonarResult.output).contains("> Task :test")
-        assertThat(sonarResult.output).contains("> Task :jacocoTestReport")
+        assertThat(sonarResult.output).contains(
+            "Unable to execute SonarScanner analysis",
+            "> Task :test",
+            "> Task :jacocoTestReport"
+        )
     }
 
     @Test
