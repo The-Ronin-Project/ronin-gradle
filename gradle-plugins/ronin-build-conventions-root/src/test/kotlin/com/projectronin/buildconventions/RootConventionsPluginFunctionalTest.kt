@@ -188,8 +188,9 @@ class RootConventionsPluginFunctionalTest : AbstractFunctionalTest() {
             fail = true
         )
 
-        assertThat(sonarResult.output).contains("> Task :test\n> Task :jacocoTestReport")
         assertThat(sonarResult.output).contains("Unable to execute SonarScanner analysis")
+        assertThat(sonarResult.output).contains("> Task :test")
+        assertThat(sonarResult.output).contains("> Task :jacocoTestReport")
     }
 
     @Test
