@@ -1,12 +1,5 @@
 package com.projectronin
 
-import gradle.kotlin.dsl.accessors._7758f57c6dd35933dbd9dc8c103ba8e9.testing
-import org.gradle.kotlin.dsl.expand
-import org.gradle.kotlin.dsl.getByName
-import org.gradle.kotlin.dsl.java
-import org.gradle.kotlin.dsl.`jvm-test-suite`
-import org.gradle.kotlin.dsl.registering
-
 plugins {
     java
     `jvm-test-suite`
@@ -17,15 +10,6 @@ testing {
         @Suppress("UNUSED_VARIABLE")
         val localContractTest by registering(JvmTestSuite::class) {
             useJUnitJupiter()
-
-            dependencies {
-                implementation(project())
-                implementation("org.testcontainers:testcontainers")
-                implementation("org.testcontainers:mysql")
-                implementation("org.testcontainers:kafka")
-                implementation("com.github.tomakehurst:wiremock-jre8-standalone")
-                implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-            }
 
             testType.set(TestSuiteType.INTEGRATION_TEST)
 
@@ -38,6 +22,7 @@ testing {
                             exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
                             events(org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED)
                         }
+                        systemProperty("ronin.contracttest.libdir", project.buildDir.resolve("libs"))
                     }
                 }
             }
